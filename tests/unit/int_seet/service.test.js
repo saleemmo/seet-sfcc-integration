@@ -47,6 +47,9 @@ describe('SeetService', () => {
         sameHost.service.call(request);
         expect(sameHost.env.calls[0].url).to.equal('https://API.seet.test/v2/api/v1/integrations/sfcc/health');
         expect(env.calls).to.have.length(0);
+        const defaultPort = setup({ prefs: { seetApiBaseUrl: 'https://api.seet.test:443' } });
+        expect(defaultPort.service.call(request).ok).to.equal(true);
+        expect(setup({ prefs: { seetApiBaseUrl: 'https://api.seet.test:8443' } }).service.call(request).error.type).to.equal('CONFIG');
     });
 
     it('does not call the API without an API key or with an insecure URL', () => {

@@ -205,11 +205,11 @@ function normalizeResult(result) {
 
 /**
  * @param {string} url - absolute URL
- * @returns {string} lower-case scheme://host[:port]
+ * @returns {string} lower-case scheme://host[:port], without the default HTTPS port
  */
 function getOrigin(url) {
     var match = /^https?:\/\/[^/?#]+/i.exec(url);
-    return match ? match[0].toLowerCase() : '';
+    return match ? match[0].toLowerCase().replace(/^(https:\/\/[^/]+):443$/, '$1') : '';
 }
 
 /**
