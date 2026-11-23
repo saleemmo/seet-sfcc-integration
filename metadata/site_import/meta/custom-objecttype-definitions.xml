@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
+    <custom-type type-id="SeetOrderOutbox">
+        <display-name xml:lang="x-default">Seet Order Outbox</display-name>
+        <description xml:lang="x-default">Orders waiting to be synchronized with Seet. Written at order placement, processed by the Seet-SyncOrders job.</description>
+        <staging-mode>no-staging</staging-mode>
+        <storage-scope>site</storage-scope>
+        <retention-days>90</retention-days>
+        <key-definition attribute-id="orderNumber">
+            <display-name xml:lang="x-default">Order Number</display-name>
+            <type>string</type>
+            <min-length>0</min-length>
+        </key-definition>
+        <attribute-definitions>
+            <attribute-definition attribute-id="storeId">
+                <display-name xml:lang="x-default">Seet Store ID</display-name>
+                <description xml:lang="x-default">Seet store the record belongs to.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="siteId">
+                <display-name xml:lang="x-default">Site ID</display-name>
+                <description xml:lang="x-default">SFCC site that placed the order.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="idempotencyKey">
+                <display-name xml:lang="x-default">Idempotency Key</display-name>
+                <description xml:lang="x-default">Sent as Idempotency-Key header (sfcc:{siteId}:{orderNumber}). Seet identifies the order by its number.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="payload">
+                <display-name xml:lang="x-default">Payload</display-name>
+                <description xml:lang="x-default">Order payload (JSON). Cleared after successful synchronization.</description>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="status">
+                <display-name xml:lang="x-default">Status</display-name>
+                <description xml:lang="x-default">PENDING, PROCESSING, SYNCED or FAILED.</description>
+                <type>enum-of-string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <value-definitions>
+                    <value-definition default="true">
+                        <display xml:lang="x-default">PENDING</display>
+                        <value>PENDING</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">PROCESSING</display>
+                        <value>PROCESSING</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">SYNCED</display>
+                        <value>SYNCED</value>
+                    </value-definition>
+                    <value-definition>
+                        <display xml:lang="x-default">FAILED</display>
+                        <value>FAILED</value>
+                    </value-definition>
+                </value-definitions>
+            </attribute-definition>
+            <attribute-definition attribute-id="retryCount">
+                <display-name xml:lang="x-default">Retry Count</display-name>
+                <description xml:lang="x-default">Number of failed delivery attempts.</description>
+                <type>int</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>0</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="lastSyncedEvent">
+                <display-name xml:lang="x-default">Last Synced Event</display-name>
+                <description xml:lang="x-default">Seet order event (for example order.delivered) of the last successful delivery.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="lastError">
+                <display-name xml:lang="x-default">Last Error</display-name>
+                <description xml:lang="x-default">Last delivery error (no personal data).</description>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="nextRetryAt">
+                <display-name xml:lang="x-default">Next Attempt At</display-name>
+                <description xml:lang="x-default">Earliest time of the next delivery attempt. Empty for SYNCED records and records that are no longer retried automatically.</description>
+                <type>datetime</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+            <attribute-definition attribute-id="lastAttemptAt">
+                <display-name xml:lang="x-default">Last Attempt At</display-name>
+                <description xml:lang="x-default">Time of the last delivery attempt.</description>
+                <type>datetime</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+        </attribute-definitions>
+        <group-definitions>
+            <attribute-group group-id="SeetOrderOutbox">
+                <display-name xml:lang="x-default">Seet Order Outbox</display-name>
+                <attribute attribute-id="orderNumber"/>
+                <attribute attribute-id="creationDate" system="true"/>
+                <attribute attribute-id="storeId"/>
+                <attribute attribute-id="siteId"/>
+                <attribute attribute-id="idempotencyKey"/>
+                <attribute attribute-id="payload"/>
+                <attribute attribute-id="status"/>
+                <attribute attribute-id="lastSyncedEvent"/>
+                <attribute attribute-id="retryCount"/>
+                <attribute attribute-id="lastError"/>
+                <attribute attribute-id="nextRetryAt"/>
+                <attribute attribute-id="lastAttemptAt"/>
+            </attribute-group>
+        </group-definitions>
+    </custom-type>
+</metadata>

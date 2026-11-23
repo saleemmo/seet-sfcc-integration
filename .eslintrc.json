@@ -1,0 +1,51 @@
+{
+    "root": true,
+    "extends": "airbnb-base/legacy",
+    "parserOptions": {
+        "ecmaVersion": 5
+    },
+    "env": {
+        "commonjs": true
+    },
+    "globals": {
+        "dw": "readonly",
+        "request": "readonly",
+        "session": "readonly",
+        "customer": "readonly",
+        "response": "readonly",
+        "empty": "readonly"
+    },
+    "rules": {
+        "indent": ["error", 4, { "SwitchCase": 1, "VariableDeclarator": 1 }],
+        "func-names": "off",
+        "vars-on-top": "off",
+        "global-require": "off",
+        "max-len": "off",
+        "no-underscore-dangle": "off",
+        "no-shadow": ["error", { "allow": ["err", "callback"] }],
+        "require-jsdoc": ["error", { "require": { "FunctionDeclaration": true } }],
+        "no-restricted-globals": ["error", "event", "fdescribe"],
+        "no-param-reassign": ["error", { "props": false }],
+        "prefer-exponentiation-operator": "off",
+        "no-restricted-properties": "off",
+        "valid-jsdoc": ["error", { "prefer": { "return": "returns" }, "requireReturn": false, "requireParamDescription": false, "requireReturnDescription": false }]
+    },
+    "overrides": [
+        {
+            "files": ["cartridges/*/cartridge/client/**/*.js"],
+            "env": { "browser": true, "commonjs": true }
+        },
+        {
+            "files": ["tests/**/*.js"],
+            "parserOptions": { "ecmaVersion": 2020 },
+            "env": { "mocha": true, "node": true },
+            "rules": { "require-jsdoc": "off", "valid-jsdoc": "off", "no-unused-expressions": "off", "no-param-reassign": "off" }
+        },
+        {
+            "files": ["webpack.config.js", "bin/**/*.js"],
+            "parserOptions": { "ecmaVersion": 2020 },
+            "env": { "node": true },
+            "rules": { "require-jsdoc": "off", "valid-jsdoc": "off", "no-console": "off", "prefer-template": "off", "no-var": "off" }
+        }
+    ]
+}

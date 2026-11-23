@@ -1,0 +1,8 @@
+{
+    "caches": [
+        {
+            "id": "SeetReviews",
+            "expireAfterSeconds": 600
+        }
+    ]
+}

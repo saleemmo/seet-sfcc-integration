@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jobs xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01">
+    <!--
+        One job with three steps, so queueing, export and retry never run concurrently
+        (B2C Commerce does not start a job while a previous run is still active).
+        Replace site-id "RefArch" with the merchant's site ID before importing.
+        The trigger is imported disabled; enable it in Business Manager after configuration.
+    -->
+    <job job-id="Seet-SyncOrders" priority="0">
+        <description>Sends placed orders and their status changes from the Seet order outbox to Seet and retries failed deliveries.</description>
+        <parameters/>
+        <flow>
+            <context site-id="RefArch"/>
+            <step step-id="QueueOrderUpdates" type="custom.Seet.QueueOrderUpdates" enforce-restart="false">
+                <description>Queues orders whose status changed (shipped, delivered, cancelled) since they were sent.</description>
+                <parameters>
+                    <parameter name="LookbackHours">24</parameter>
+                </parameters>
+                <rules>
+                    <on-exit status="ERROR">
+                        <continue/>
+                    </on-exit>
+                </rules>
+            </step>
+            <step step-id="ExportOrders" type="custom.Seet.ExportOrders" enforce-restart="false">
+                <description>First delivery attempt for PENDING records (new orders and status changes).</description>
+                <parameters>
+                    <parameter name="BatchSize">50</parameter>
+                    <parameter name="MaxRetries">8</parameter>
+                    <parameter name="BaseDelayMinutes">5</parameter>
+                    <parameter name="MaxDelayMinutes">720</parameter>
+                </parameters>
+                <rules>
+                    <on-exit status="ERROR">
+                        <continue/>
+                    </on-exit>
+                </rules>
+            </step>
+            <step step-id="RetryFailedOrders" type="custom.Seet.RetryFailedOrders" enforce-restart="false">
+                <description>Recovers stale records and retries FAILED records whose backoff has elapsed.</description>
+                <parameters>
+                    <parameter name="BatchSize">50</parameter>
+                    <parameter name="MaxRetries">8</parameter>
+                    <parameter name="BaseDelayMinutes">5</parameter>
+                    <parameter name="MaxDelayMinutes">720</parameter>
+                    <parameter name="LockTimeoutMinutes">30</parameter>
+                </parameters>
+            </step>
+        </flow>
+        <rules/>
+        <triggers>
+            <run-recurring enabled="false">
+                <recurrence>
+                    <date-from>2026-01-01Z</date-from>
+                    <start-time>00:00:00.000Z</start-time>
+                    <interval>15m</interval>
+                    <day-of-week>
+                        <weekday>Monday</weekday>
+                        <weekday>Tuesday</weekday>
+                        <weekday>Wednesday</weekday>
+                        <weekday>Thursday</weekday>
+                        <weekday>Friday</weekday>
+                        <weekday>Saturday</weekday>
+                        <weekday>Sunday</weekday>
+                    </day-of-week>
+                </recurrence>
+            </run-recurring>
+        </triggers>
+    </job>
+</jobs>

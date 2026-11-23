@@ -1,0 +1,62 @@
+<iscontent type="text/html" charset="UTF-8" compact="true" />
+<iscomment>
+    Review list and pagination. Included by seetReviews.isml and rendered alone
+    by Seet-ReviewsList for AJAX pagination.
+</iscomment>
+<isif condition="${pdict.seetReviews}">
+    <isset name="seetList" value="${pdict.seetReviews}" scope="page" />
+    <div class="seet-reviews__list-wrapper" data-seet-list tabindex="-1">
+        <isif condition="${!seetList.available}">
+            <p class="seet-reviews__message">${Resource.msg('message.reviews.unavailable', 'seet', null)}</p>
+        <iselseif condition="${seetList.reviews.length === 0}" />
+            <p class="seet-reviews__message">${Resource.msg('message.reviews.empty', 'seet', null)}</p>
+        <iselse/>
+            <ol class="seet-reviews__list">
+                <isloop items="${seetList.reviews}" var="review">
+                    <li class="seet-review">
+                        <article>
+                            <header class="seet-review__header">
+                                <isset name="seetStarsPercent" value="${review.percent}" scope="page" />
+                                <isset name="seetStarsLabel" value="${Resource.msgf('label.rating.aria', 'seet', null, review.rating)}" scope="page" />
+                                <isinclude template="product/components/seetStars" />
+                                <isif condition="${review.title}">
+                                    <h3 class="seet-review__title"><isprint value="${review.title}" encoding="htmlcontent" /></h3>
+                                </isif>
+                                <p class="seet-review__meta">
+                                    <isif condition="${review.authorName}">
+                                        <span class="seet-review__author"><isprint value="${review.authorName}" encoding="htmlcontent" /></span>
+                                    </isif>
+                                    <isif condition="${review.dateDisplay}">
+                                        <time class="seet-review__date" datetime="${review.date}">${review.dateDisplay}</time>
+                                    </isif>
+                                    <isif condition="${review.verifiedPurchase}">
+                                        <span class="seet-review__verified">${Resource.msg('label.verified', 'seet', null)}</span>
+                                    </isif>
+                                </p>
+                            </header>
+                            <p class="seet-review__content"><isprint value="${review.content}" encoding="htmlcontent" /></p>
+                        </article>
+                    </li>
+                </isloop>
+            </ol>
+
+            <isif condition="${seetList.pagination && seetList.pagination.totalPages > 1}">
+                <nav class="seet-pagination" aria-label="${Resource.msg('label.pagination', 'seet', null)}">
+                    <isif condition="${seetList.pagination.hasPrevious}">
+                        <button type="button" class="seet-pagination__button"
+                            data-seet-page-url="${URLUtils.url('Seet-ReviewsList', 'pid', seetList.productId, 'page', seetList.pagination.previousPage)}">
+                            ${Resource.msg('button.previous', 'seet', null)}
+                        </button>
+                    </isif>
+                    <span class="seet-pagination__status">${Resource.msgf('label.page', 'seet', null, seetList.pagination.page, seetList.pagination.totalPages)}</span>
+                    <isif condition="${seetList.pagination.hasNext}">
+                        <button type="button" class="seet-pagination__button"
+                            data-seet-page-url="${URLUtils.url('Seet-ReviewsList', 'pid', seetList.productId, 'page', seetList.pagination.nextPage)}">
+                            ${Resource.msg('button.next', 'seet', null)}
+                        </button>
+                    </isif>
+                </nav>
+            </isif>
+        </isif>
+    </div>
+</isif>

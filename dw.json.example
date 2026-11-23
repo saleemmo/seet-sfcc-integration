@@ -1,0 +1,6 @@
+{
+    "hostname": "your-sandbox.dx.commercecloud.salesforce.com",
+    "username": "your.bm.user@example.com",
+    "password": "your-webdav-access-key",
+    "code-version": "version1"
+}
