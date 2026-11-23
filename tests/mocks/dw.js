@@ -23,14 +23,14 @@ function createEnv(options = {}) {
         prefs: {
             seetEnabled: true,
             seetStoreId: 'store_1',
-            seetApiBaseUrl: 'https://api.seet.test',
+            seetApiBaseUrl: '',
             seetReviewsEnabled: true,
             seetOrderSyncEnabled: true,
             seetReviewPageSize: 5,
             ...(options.prefs || {})
         },
         credentials: {
-            'seet.http.api.cred': { url: 'https://api.seet.test', password: 'key_default' },
+            'seet.http.api.cred': { url: 'https://api.seet.test/api/v1', password: 'key_default' },
             ...(options.credentials || {})
         },
         calls: [],

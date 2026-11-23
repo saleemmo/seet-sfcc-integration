@@ -45,12 +45,11 @@ function getReviewsViewData(req) {
         page: req.querystring.page,
         locale: req.locale && req.locale.id
     });
-    var ratingResult = reviewsResult.available ? SeetReviewsService.getProductRating(productId) : null;
 
     return {
         productId: productId,
         available: reviewsResult.available,
-        rating: ratingResult && ratingResult.available ? ratingResult.rating : null,
+        rating: reviewsResult.available ? reviewsResult.reviews.rating : null,
         reviews: reviewsResult.available ? reviewsResult.reviews.reviews : [],
         pagination: reviewsResult.available ? reviewsResult.reviews.pagination : null
     };

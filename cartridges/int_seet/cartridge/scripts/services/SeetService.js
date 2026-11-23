@@ -88,10 +88,14 @@ function createService(serviceId) {
             svc.setURL(request.url);
             svc.setRequestMethod(request.method);
             svc.addHeader('Accept', 'application/json');
-            svc.addHeader('Authorization', 'Bearer ' + request.apiKey);
-            svc.addHeader('X-Seet-Store-Id', request.storeId);
+            if (request.apiKey) {
+                svc.addHeader('Authorization', 'Bearer ' + request.apiKey);
+            }
             svc.addHeader('X-Seet-Platform', 'sfcc');
             svc.addHeader('X-Seet-Site-Id', request.siteId);
+            Object.keys(request.headers || {}).forEach(function (name) {
+                svc.addHeader(name, request.headers[name]);
+            });
             if (request.idempotencyKey) {
                 svc.addHeader('Idempotency-Key', request.idempotencyKey);
             }
@@ -151,7 +155,7 @@ function isRetryableStatus(statusCode) {
 }
 
 /**
- * Extracts a safe message from a Seet error body ({ success:false, error:{code,message} }).
+ * Extracts a safe message from a Seet error body ({ message, code }).
  * @param {string} errorText - raw error response body
  * @returns {string} message
  */
@@ -161,7 +165,7 @@ function extractErrorMessage(errorText) {
         return [body.error.code, body.error.message].filter(Boolean).join(': ');
     }
     if (body && body.message) {
-        return String(body.message);
+        return [body.code, body.message].filter(Boolean).join(': ');
     }
     return '';
 }
@@ -213,7 +217,9 @@ function getOrigin(url) {
 }
 
 /**
- * Performs an authenticated call to the Seet API for the current site's store.
+ * Performs a call to the Seet API for the current site's store. The secret key
+ * is only attached when options.auth is not false; the public review endpoints
+ * identify the store by its public key instead.
  *
  * @param {Object} options - call options
  * @param {string} options.serviceId - one of SERVICE_IDS
@@ -222,6 +228,8 @@ function getOrigin(url) {
  * @param {Object} [options.query] - query parameters
  * @param {Object} [options.body] - JSON body
  * @param {string} [options.idempotencyKey] - Idempotency-Key header value
+ * @param {boolean} [options.auth] - false to call a public endpoint without the secret key
+ * @param {Object} [options.headers] - additional request headers
  * @returns {{ok: boolean, statusCode: (number|null), data: *, meta: *, error: (Object|null)}} normalized result
  */
 function call(options) {
@@ -244,9 +252,10 @@ function call(options) {
         return failure(ERROR_TYPES.CONFIG, null, 'Service ' + options.serviceId + ' is not configured', false);
     }
 
-    var apiKey = credential ? credential.getPassword() : null;
-    if (!apiKey) {
-        return failure(ERROR_TYPES.CONFIG, null, 'API key (service credential password) is not configured', false);
+    var useSecretKey = options.auth !== false;
+    var apiKey = useSecretKey && credential ? credential.getPassword() : null;
+    if (useSecretKey && !apiKey) {
+        return failure(ERROR_TYPES.CONFIG, null, 'Secret key (service credential password) is not configured', false);
     }
 
     // The credential URL (managed with the API key by administrators) defines
@@ -266,8 +275,8 @@ function call(options) {
             url: baseUrl + options.path + buildQueryString(options.query),
             method: options.method || 'GET',
             apiKey: apiKey,
-            storeId: SeetConfig.getStoreId(),
             siteId: SeetConfig.getSiteId(),
+            headers: options.headers || null,
             idempotencyKey: options.idempotencyKey || null,
             body: options.body
         });

@@ -9,16 +9,16 @@ describe('SeetService', () => {
         const env = createEnv(options);
         return { env, service: createLoader(env)('scripts/services/SeetService') };
     }
-    const request = { serviceId: 'seet.http.reviews', method: 'GET', path: '/api/v1/integrations/sfcc/health' };
+    const request = { serviceId: 'seet.http.reviews', method: 'GET', path: '/integrations/orders' };
 
-    it('authenticates with the store API key and sends the store context', () => {
+    it('authenticates with the store secret key and sends the site context', () => {
         const { env, service } = setup();
         const result = service.call({ ...request, query: { page: 2, empty: '' } });
         expect(result.ok).to.equal(true);
         const call = env.calls[0];
-        expect(call.url).to.equal('https://api.seet.test/api/v1/integrations/sfcc/health?page=2');
+        expect(call.url).to.equal('https://api.seet.test/api/v1/integrations/orders?page=2');
         expect(call.headers.Authorization).to.equal('Bearer key_default');
-        expect(call.headers['X-Seet-Store-Id']).to.equal('store_1');
+        expect(call.headers).to.not.have.property('X-Seet-Store-Id');
         expect(call.headers['X-Seet-Site-Id']).to.equal('RefArch');
         expect(call.authentication).to.equal('NONE');
     });
@@ -26,12 +26,11 @@ describe('SeetService', () => {
     it('uses a per-site credential override for multi-store realms', () => {
         const { env, service } = setup({
             prefs: { seetServiceCredentialId: 'seet.http.api.cred.brandB', seetStoreId: 'store_B' },
-            credentials: { 'seet.http.api.cred.brandB': { url: 'https://api.seet.test', password: 'key_B' } }
+            credentials: { 'seet.http.api.cred.brandB': { url: 'https://api.seet.test/api/v1', password: 'key_B' } }
         });
         service.call(request);
         expect(env.calls[0].credentialId).to.equal('seet.http.api.cred.brandB');
         expect(env.calls[0].headers.Authorization).to.equal('Bearer key_B');
-        expect(env.calls[0].headers['X-Seet-Store-Id']).to.equal('store_B');
     });
 
     it('falls back to the credential URL when no base URL preference is set', () => {
@@ -43,9 +42,9 @@ describe('SeetService', () => {
     it('never sends the API key to a host other than the credential URL host', () => {
         const { env, service } = setup({ prefs: { seetApiBaseUrl: 'https://attacker.example' } });
         expect(service.call(request).error.type).to.equal('CONFIG');
-        const sameHost = setup({ prefs: { seetApiBaseUrl: 'https://API.seet.test/v2' } });
+        const sameHost = setup({ prefs: { seetApiBaseUrl: 'https://API.seet.test/api/v2' } });
         sameHost.service.call(request);
-        expect(sameHost.env.calls[0].url).to.equal('https://API.seet.test/v2/api/v1/integrations/sfcc/health');
+        expect(sameHost.env.calls[0].url).to.equal('https://API.seet.test/api/v2/integrations/orders');
         expect(env.calls).to.have.length(0);
         const defaultPort = setup({ prefs: { seetApiBaseUrl: 'https://api.seet.test:443' } });
         expect(defaultPort.service.call(request).ok).to.equal(true);

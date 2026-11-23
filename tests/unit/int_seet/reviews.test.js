@@ -4,25 +4,20 @@ const { expect } = require('chai');
 const { createEnv } = require('../../mocks/dw');
 const { createLoader } = require('../../mocks/loader');
 
-const RATING = {
-    success: true,
-    data: {
-        product_id: 'P1',
-        average_rating: 4.66,
-        total_reviews: 125,
-        rating_distribution: {
-            5: 100, 4: 15, 3: 5, 2: 3, 1: 2
-        }
-    }
-};
+const RATING = [{ sku: 'P1', average_rating: '4.7', num_ratings: 125 }];
 const REVIEWS = {
-    success: true,
-    data: {
-        reviews: [{
-            id: 1, title: 'Great', content: 'Nice <b>fit</b>', rating: 5, author_name: 'Sara', created_at: '2026-11-01T10:00:00Z', verified_purchase: true
-        }],
-        pagination: {
-            page: 2, page_size: 5, total: 12, total_pages: 3
+    data: [{
+        id: 1, title: 'Great', content: 'Nice <b>fit</b>', rating: 5, reviewer: 'Sara', created_at: '2026-11-01 10:00:00', verified: true
+    }],
+    meta: {
+        total: 12,
+        filtered_total: 12,
+        current_page: 2,
+        last_page: 3,
+        per_page: 5,
+        average_rating: 4.7,
+        distribution: {
+            5: 9, 4: 3, 3: 0, 2: 0, 1: 0
         }
     }
 };
@@ -36,22 +31,23 @@ describe('SeetReviewsService', () => {
     it('maps the product rating', () => {
         const { env, reviews } = setup(() => ({ statusCode: 200, text: JSON.stringify(RATING) }));
         const result = reviews.getProductRating('P1');
-        expect(env.calls[0].url).to.equal('https://api.seet.test/api/v1/integrations/sfcc/products/P1/rating');
+        expect(env.calls[0].url).to.equal('https://api.seet.test/api/v1/public/product/rating-batch?store=store_1&sku=P1');
         expect(result.available).to.equal(true);
         expect(result.rating).to.include({
             averageRating: 4.7, averageDisplay: '4.7', totalReviews: 125, percent: 94
         });
-        expect(result.rating.distribution[0]).to.deep.equal({ stars: 5, count: 100, percent: 80 });
     });
 
     it('maps reviews and validates pagination before calling the API', () => {
         const { env, reviews } = setup(() => ({ statusCode: 200, text: JSON.stringify(REVIEWS) }));
         const result = reviews.getProductReviews('P 1/x', { page: '-3', pageSize: 999, locale: 'ar_SA' });
-        expect(env.calls[0].url).to.equal('https://api.seet.test/api/v1/integrations/sfcc/products/P%201%2Fx/reviews?page=1&per_page=50');
+        expect(env.calls[0].url).to.equal('https://api.seet.test/api/v1/public/reviews?public_key=store_1&product_external_id=P%201%2Fx&page=1&limit=50');
         const review = result.reviews.reviews[0];
         expect(review).to.include({
-            title: 'Great', content: 'Nice <b>fit</b>', verifiedPurchase: true, dateDisplay: 'ar_SA:2026-11-01'
+            title: 'Great', content: 'Nice <b>fit</b>', authorName: 'Sara', verifiedPurchase: true, dateDisplay: 'ar_SA:2026-11-01'
         });
+        expect(result.reviews.rating).to.include({ averageDisplay: '4.7', totalReviews: 12 });
+        expect(result.reviews.rating.distribution[0]).to.deep.equal({ stars: 5, count: 9, percent: 75 });
         expect(result.reviews.pagination).to.include({
             page: 2, totalPages: 3, previousPage: 1, nextPage: 3
         });
@@ -85,9 +81,45 @@ describe('SeetReviewsService', () => {
         expect(env.calls).to.have.length(2);
     });
 
-    it('treats unknown products in Seet as having no reviews', () => {
-        const { reviews } = setup(() => ({ statusCode: 404, text: '' }));
+    it('shows no reviews for products Seet does not know', () => {
+        const { reviews } = setup((call) => ({
+            statusCode: 200,
+            text: call.url.indexOf('rating-batch') > -1
+                ? JSON.stringify([{ sku: 'P1', average_rating: '0', num_ratings: 0 }])
+                : JSON.stringify({
+                    data: [],
+                    meta: {
+                        total: 0, filtered_total: 0, current_page: 1, last_page: 1, per_page: 5
+                    }
+                })
+        }));
         expect(reviews.getProductRating('P1').rating.totalReviews).to.equal(0);
-        expect(reviews.getProductReviews('P1').reviews.reviews).to.deep.equal([]);
+        const result = reviews.getProductReviews('P1').reviews;
+        expect(result.reviews).to.deep.equal([]);
+        expect(result.rating.totalReviews).to.equal(0);
+    });
+
+    it('reports an invalid public key (404) or a blocked storefront domain (403) as unavailable', () => {
+        [404, 403].forEach((statusCode) => {
+            const { env, reviews } = setup(() => ({ statusCode, text: '{"message":"Invalid public key."}' }));
+            expect(reviews.getProductRating('P1')).to.deep.equal({ available: false, error: 'HTTP' });
+            expect(reviews.getProductReviews('P1').available).to.equal(false);
+            expect(Object.keys(env.cacheStore)).to.have.length(0);
+        });
+    });
+
+    it('identifies the store by its public key and never sends the secret key', () => {
+        const { env, reviews } = setup(() => ({ statusCode: 200, text: JSON.stringify(RATING) }), {
+            credentials: { 'seet.http.api.cred': { url: 'https://api.seet.test/api/v1', password: '' } }
+        });
+        global.request = { httpHost: 'shop.example.com' };
+        try {
+            expect(reviews.getProductRating('P1').available).to.equal(true);
+        } finally {
+            delete global.request;
+        }
+        expect(env.calls[0].headers).to.not.have.property('Authorization');
+        expect(env.calls[0].headers.Origin).to.equal('https://shop.example.com');
+        expect(reviews.getProductRating('P1;P2')).to.deep.equal({ available: false, error: 'INVALID_PRODUCT_ID' });
     });
 });

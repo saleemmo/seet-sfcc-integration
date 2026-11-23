@@ -64,15 +64,15 @@ function parsePagination(page, pageSize, defaultPageSize, maxPageSize) {
 }
 
 /**
- * @param {string} isoDate - ISO-8601 date string
+ * @param {string} dateText - ISO-8601 or "YYYY-MM-DD HH:mm:ss" date string
  * @param {string} locale - request locale ID
  * @returns {string} localized date or empty string
  */
-function formatDate(isoDate, locale) {
-    if (!isoDate) {
+function formatDate(dateText, locale) {
+    if (!dateText) {
         return '';
     }
-    var date = new Date(isoDate);
+    var date = new Date(String(dateText).replace(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})$/, '$1T$2Z'));
     if (isNaN(date.getTime())) {
         return '';
     }
@@ -86,16 +86,20 @@ function formatDate(isoDate, locale) {
 }
 
 /**
- * @param {Object} data - "data" object of the rating endpoint
+ * @param {Object} data - rating summary
+ * @param {string} data.product_id - product ID the summary belongs to
+ * @param {number|string} data.average_rating - average rating
+ * @param {number} data.total - number of reviews
+ * @param {Object} [data.distribution] - review count per star value
  * @returns {Object|null} rating view model
  */
 function toRatingModel(data) {
     if (!data || typeof data !== 'object') {
         return null;
     }
-    var total = toCount(data.total_reviews);
+    var total = toCount(data.total);
     var average = toRating(data.average_rating);
-    var distributionSource = data.rating_distribution || {};
+    var distributionSource = data.distribution || {};
     var distribution = [5, 4, 3, 2, 1].map(function (stars) {
         var count = toCount(distributionSource[String(stars)]);
         return {
@@ -128,26 +132,27 @@ function toReviewModel(review, locale) {
         content: toText(review.content),
         rating: rating,
         percent: rating * 20,
-        authorName: toText(review.author_name),
+        authorName: toText(review.reviewer),
         date: toText(review.created_at),
         dateDisplay: formatDate(review.created_at, locale),
-        verifiedPurchase: review.verified_purchase === true
+        verifiedPurchase: review.verified === true
     };
 }
 
 /**
- * @param {Object} data - "data" object of the reviews endpoint
+ * @param {Array} data - "data" array of GET /public/reviews
+ * @param {Object} meta - "meta" object of GET /public/reviews
  * @param {Object} requested - requested pagination
  * @param {string} locale - request locale ID
  * @returns {Object} reviews view model
  */
-function toReviewsModel(data, requested, locale) {
-    var source = data && Array.isArray(data.reviews) ? data.reviews : [];
-    var pagination = (data && data.pagination) || {};
-    var page = toCount(pagination.page) || requested.page;
-    var pageSize = toCount(pagination.page_size) || requested.pageSize;
-    var total = toCount(pagination.total);
-    var totalPages = toCount(pagination.total_pages) || (total ? Math.ceil(total / pageSize) : 1);
+function toReviewsModel(data, meta, requested, locale) {
+    var source = Array.isArray(data) ? data : [];
+    var pagination = meta || {};
+    var page = toCount(pagination.current_page) || requested.page;
+    var pageSize = toCount(pagination.per_page) || requested.pageSize;
+    var total = toCount(pagination.filtered_total !== undefined ? pagination.filtered_total : pagination.total);
+    var totalPages = toCount(pagination.last_page) || (total ? Math.ceil(total / pageSize) : 1);
 
     return {
         reviews: source.filter(function (review) {
