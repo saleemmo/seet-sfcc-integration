@@ -1,0 +1,185 @@
+// Seet ratings & reviews. Uses CSS logical properties so the same styles work
+// for Arabic (RTL) and English (LTR) storefronts.
+
+$seet-star-color: #f5a623 !default;
+$seet-star-empty-color: #d6d6d6 !default;
+$seet-border-color: #e5e5e5 !default;
+$seet-muted-color: #6b6b6b !default;
+$seet-verified-color: #1e7e34 !default;
+$seet-error-color: #b00020 !default;
+
+.seet-stars {
+    position: relative;
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+    color: $seet-star-empty-color;
+    white-space: nowrap;
+    vertical-align: middle;
+
+    &::before {
+        content: "\2605\2605\2605\2605\2605";
+    }
+}
+
+.seet-stars__fill {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    overflow: hidden;
+    color: $seet-star-color;
+
+    &::before {
+        content: "\2605\2605\2605\2605\2605";
+    }
+}
+
+.seet-rating {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.seet-rating__value {
+    font-weight: 600;
+}
+
+.seet-rating__count {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.seet-reviews {
+    margin-block: 2rem;
+}
+
+.seet-reviews__title {
+    margin-block-end: 1rem;
+    font-size: 1.5rem;
+}
+
+.seet-reviews__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-block-end: 1rem;
+    margin-block-end: 1rem;
+    border-block-end: 1px solid $seet-border-color;
+}
+
+.seet-reviews__average {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.seet-reviews__average-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.seet-reviews__total {
+    color: $seet-muted-color;
+}
+
+.seet-distribution {
+    flex: 1 1 16rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.seet-distribution__row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 5rem;
+    gap: 0.5rem;
+    align-items: center;
+    margin-block-end: 0.25rem;
+}
+
+.seet-distribution__bar {
+    display: block;
+    height: 0.5rem;
+    overflow: hidden;
+    background: $seet-star-empty-color;
+    border-radius: 0.25rem;
+}
+
+.seet-distribution__bar-fill {
+    display: block;
+    height: 100%;
+    background: $seet-star-color;
+}
+
+.seet-distribution__count {
+    color: $seet-muted-color;
+    text-align: end;
+}
+
+.seet-reviews__list-wrapper {
+    &:focus {
+        outline: none;
+    }
+
+    &[aria-busy="true"] {
+        opacity: 0.5;
+    }
+}
+
+.seet-reviews__list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.seet-review {
+    padding-block: 1rem;
+    border-block-end: 1px solid $seet-border-color;
+}
+
+.seet-review__title {
+    margin-block: 0.5rem 0.25rem;
+    font-size: 1.1rem;
+}
+
+.seet-review__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 0.875rem;
+    color: $seet-muted-color;
+}
+
+.seet-review__verified {
+    font-weight: 600;
+    color: $seet-verified-color;
+}
+
+.seet-review__content {
+    margin-block: 0.5rem 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.seet-reviews__message--error {
+    color: $seet-error-color;
+}
+
+.seet-pagination {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    margin-block-start: 1rem;
+}
+
+.seet-pagination__button {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    background: transparent;
+    border: 1px solid currentcolor;
+    border-radius: 0.25rem;
+}

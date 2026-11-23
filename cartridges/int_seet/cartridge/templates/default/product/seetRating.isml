@@ -1,0 +1,12 @@
+<iscontent type="text/html" charset="UTF-8" compact="true" />
+<iscomment>Rendered by Seet-Rating (remote include). Renders nothing when Seet is unavailable.</iscomment>
+<isif condition="${pdict.seetRating && pdict.seetRating.totalReviews > 0}">
+    <isset name="seetRating" value="${pdict.seetRating}" scope="page" />
+    <div class="seet-rating">
+        <isset name="seetStarsPercent" value="${seetRating.percent}" scope="page" />
+        <isset name="seetStarsLabel" value="${Resource.msgf('label.rating.aria', 'seet', null, seetRating.averageDisplay)}" scope="page" />
+        <isinclude template="product/components/seetStars" />
+        <span class="seet-rating__value" aria-hidden="true">${seetRating.averageDisplay}</span>
+        <a class="seet-rating__count" href="#seet-reviews">${Resource.msgf('label.rating.count', 'seet', null, seetRating.totalReviews)}</a>
+    </div>
+</isif>

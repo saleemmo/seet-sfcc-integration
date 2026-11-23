@@ -1,0 +1,4 @@
+<iscomment>Expects page variables seetStarsPercent (0-100) and seetStarsLabel (accessible text).</iscomment>
+<span class="seet-stars" role="img" aria-label="${seetStarsLabel}">
+    <span class="seet-stars__fill" style="width: ${seetStarsPercent}%;"></span>
+</span>

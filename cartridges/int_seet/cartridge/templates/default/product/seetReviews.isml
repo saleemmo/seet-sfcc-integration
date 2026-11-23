@@ -1,0 +1,35 @@
+<iscontent type="text/html" charset="UTF-8" compact="true" />
+<iscomment>Rendered by Seet-Reviews (remote include).</iscomment>
+<isif condition="${pdict.seetReviews}">
+    <isset name="seetData" value="${pdict.seetReviews}" scope="page" />
+    <section id="seet-reviews" class="seet-reviews" aria-labelledby="seet-reviews-title"
+        data-seet-reviews
+        data-seet-error="${Resource.msg('message.reviews.loaderror', 'seet', null)}">
+        <h2 id="seet-reviews-title" class="seet-reviews__title">${Resource.msg('heading.reviews', 'seet', null)}</h2>
+
+        <isif condition="${seetData.available && seetData.rating && seetData.rating.totalReviews > 0}">
+            <div class="seet-reviews__summary">
+                <p class="seet-reviews__average">
+                    <span class="seet-reviews__average-value" aria-hidden="true">${seetData.rating.averageDisplay}</span>
+                    <isset name="seetStarsPercent" value="${seetData.rating.percent}" scope="page" />
+                    <isset name="seetStarsLabel" value="${Resource.msgf('label.rating.aria', 'seet', null, seetData.rating.averageDisplay)}" scope="page" />
+                    <isinclude template="product/components/seetStars" />
+                    <span class="seet-reviews__total">${Resource.msgf('label.rating.count', 'seet', null, seetData.rating.totalReviews)}</span>
+                </p>
+                <ul class="seet-distribution" aria-label="${Resource.msg('label.distribution', 'seet', null)}">
+                    <isloop items="${seetData.rating.distribution}" var="row">
+                        <li class="seet-distribution__row">
+                            <span class="seet-distribution__label">${Resource.msgf('label.distribution.stars', 'seet', null, row.stars)}</span>
+                            <span class="seet-distribution__bar" aria-hidden="true">
+                                <span class="seet-distribution__bar-fill" style="width: ${row.percent}%;"></span>
+                            </span>
+                            <span class="seet-distribution__count">${Resource.msgf('label.distribution.count', 'seet', null, row.count, row.percent)}</span>
+                        </li>
+                    </isloop>
+                </ul>
+            </div>
+        </isif>
+
+        <isinclude template="product/components/seetReviewList" />
+    </section>
+</isif>

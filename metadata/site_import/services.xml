@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns="http://www.demandware.com/xml/impex/services/2014-09-26">
+    <!--
+        Credential placeholder only. After the first import set the real URL and
+        the store API key (password field) in Business Manager:
+        Administration > Operations > Services > Credentials > seet.http.api.cred
+        Do not re-import this file over a configured credential.
+    -->
+    <service-credential service-credential-id="seet.http.api.cred">
+        <url>https://seet-api.invalid</url>
+        <user-id/>
+    </service-credential>
+
+    <!-- Storefront reads: short timeout, circuit breaker protects the product page. -->
+    <service-profile service-profile-id="seet.http.reviews.profile">
+        <timeout-millis>2000</timeout-millis>
+        <rate-limit-enabled>false</rate-limit-enabled>
+        <rate-limit-calls>0</rate-limit-calls>
+        <rate-limit-millis>0</rate-limit-millis>
+        <cb-enabled>true</cb-enabled>
+        <cb-calls>10</cb-calls>
+        <cb-millis>60000</cb-millis>
+    </service-profile>
+
+    <!-- Job writes: longer timeout, circuit breaker stops a batch when Seet is down. -->
+    <service-profile service-profile-id="seet.http.orders.profile">
+        <timeout-millis>10000</timeout-millis>
+        <rate-limit-enabled>false</rate-limit-enabled>
+        <rate-limit-calls>0</rate-limit-calls>
+        <rate-limit-millis>0</rate-limit-millis>
+        <cb-enabled>true</cb-enabled>
+        <cb-calls>5</cb-calls>
+        <cb-millis>60000</cb-millis>
+    </service-profile>
+
+    <service service-id="seet.http.reviews">
+        <service-type>HTTP</service-type>
+        <enabled>true</enabled>
+        <log-prefix>seet</log-prefix>
+        <comm-log-enabled>false</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
+        <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>seet.http.reviews.profile</profile-id>
+        <credential-id>seet.http.api.cred</credential-id>
+    </service>
+
+    <service service-id="seet.http.orders">
+        <service-type>HTTP</service-type>
+        <enabled>true</enabled>
+        <log-prefix>seet</log-prefix>
+        <comm-log-enabled>false</comm-log-enabled>
+        <force-prd-enabled>false</force-prd-enabled>
+        <mock-mode-enabled>false</mock-mode-enabled>
+        <profile-id>seet.http.orders.profile</profile-id>
+        <credential-id>seet.http.api.cred</credential-id>
+    </service>
+</services>

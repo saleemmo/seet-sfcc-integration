@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns="http://www.demandware.com/xml/impex/metadata/2006-10-31">
+    <type-extension type-id="SitePreferences">
+        <custom-attribute-definitions>
+            <attribute-definition attribute-id="seetEnabled">
+                <display-name xml:lang="x-default">Seet: Enabled</display-name>
+                <description xml:lang="x-default">Master switch for the Seet integration on this site.</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetStoreId">
+                <display-name xml:lang="x-default">Seet: Store ID</display-name>
+                <description xml:lang="x-default">Seet Store ID for this site. Must match the store that owns the API key in the service credential.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetApiBaseUrl">
+                <display-name xml:lang="x-default">Seet: API Base URL</display-name>
+                <description xml:lang="x-default">HTTPS base URL of the Seet API, without trailing slash. Leave empty to use the URL of the service credential.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetServiceCredentialId">
+                <display-name xml:lang="x-default">Seet: Service Credential ID (optional)</display-name>
+                <description xml:lang="x-default">Overrides the service credential used for this site. Only needed when several sites in this realm connect to different Seet stores. The API key itself is stored in the service credential, never in site preferences.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetReviewsEnabled">
+                <display-name xml:lang="x-default">Seet: Reviews Enabled</display-name>
+                <description xml:lang="x-default">Render Seet ratings and reviews on the storefront.</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetOrderSyncEnabled">
+                <display-name xml:lang="x-default">Seet: Order Sync Enabled</display-name>
+                <description xml:lang="x-default">Queue placed orders and export them to Seet with the scheduled jobs.</description>
+                <type>boolean</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <default-value>false</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetReviewPageSize">
+                <display-name xml:lang="x-default">Seet: Reviews Page Size</display-name>
+                <description xml:lang="x-default">Number of reviews per page (1-50).</description>
+                <type>int</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-value>1.0</min-value>
+                <max-value>50.0</max-value>
+                <default-value>5</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetCacheMinutes">
+                <display-name xml:lang="x-default">Seet: Storefront Cache Minutes</display-name>
+                <description xml:lang="x-default">Page cache period of the rating and reviews fragments (1-1440). Unavailable responses are cached for 5 minutes only.</description>
+                <type>int</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-value>1.0</min-value>
+                <max-value>1440.0</max-value>
+                <default-value>60</default-value>
+            </attribute-definition>
+            <attribute-definition attribute-id="seetOrderStatusMapping">
+                <display-name xml:lang="x-default">Seet: Order Status Mapping (JSON)</display-name>
+                <description xml:lang="x-default">Optional JSON object mapping SFCC order statuses (CREATED, NEW, OPEN, COMPLETED, CANCELLED, REPLACED, FAILED) to Seet status values, e.g. {&quot;COMPLETED&quot;:&quot;delivered&quot;}.</description>
+                <type>text</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+            </attribute-definition>
+        </custom-attribute-definitions>
+        <group-definitions>
+            <attribute-group group-id="Seet">
+                <display-name xml:lang="x-default">Seet Reviews &amp; Ratings</display-name>
+                <attribute attribute-id="seetEnabled"/>
+                <attribute attribute-id="seetStoreId"/>
+                <attribute attribute-id="seetApiBaseUrl"/>
+                <attribute attribute-id="seetServiceCredentialId"/>
+                <attribute attribute-id="seetReviewsEnabled"/>
+                <attribute attribute-id="seetOrderSyncEnabled"/>
+                <attribute attribute-id="seetReviewPageSize"/>
+                <attribute attribute-id="seetCacheMinutes"/>
+                <attribute attribute-id="seetOrderStatusMapping"/>
+            </attribute-group>
+        </group-definitions>
+    </type-extension>
+</metadata>

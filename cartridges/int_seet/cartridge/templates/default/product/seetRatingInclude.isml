@@ -1,0 +1,12 @@
+<iscomment>
+    Seet rating summary for the product page. Add to the merchant's PDP template
+    (rendered by Product-Show), e.g. next to the product name:
+        <isinclude template="product/seetRatingInclude" />
+</iscomment>
+<isif condition="${pdict.seet && pdict.seet.enabled}">
+    <isscript>
+        var assets = require('*/cartridge/scripts/assets');
+        assets.addCss('/css/seetReviews.css');
+    </isscript>
+    <isinclude url="${pdict.seet.ratingUrl}" />
+</isif>
