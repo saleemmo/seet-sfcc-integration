@@ -245,7 +245,7 @@ function createOrder(overrides = {}) {
         getStatus: () => ({ value: overrides.status === undefined ? 3 : overrides.status }),
         getShippingStatus: () => ({ value: overrides.shippingStatus || 0 }),
         getCurrencyCode: () => 'SAR',
-        getCustomerLocaleID: () => 'ar_SA',
+        getCustomerLocaleID: () => (overrides.locale === undefined ? 'ar_SA' : overrides.locale),
         getCustomerNo: () => overrides.customerNo === undefined ? 'customer_123' : overrides.customerNo,
         getCustomerEmail: () => 'customer@example.com',
         getCustomerName: () => (overrides.customerName === undefined ? 'Sara Ali' : overrides.customerName),

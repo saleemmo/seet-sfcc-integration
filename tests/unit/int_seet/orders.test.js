@@ -47,6 +47,13 @@ describe('SeetOrdersService', () => {
         expect(service.buildOrderPayload(createOrder({ lineItems: [odd] })).items.map((item) => item.sku)).to.deep.equal(['constructor']);
     });
 
+    it('sends a language only when the order locale starts with a language code', () => {
+        const { service } = load();
+        expect(service.buildOrderPayload(createOrder({ locale: 'en' })).language).to.equal('en');
+        expect(service.buildOrderPayload(createOrder({ locale: 'default' })).language).to.equal(undefined);
+        expect(service.buildOrderPayload(createOrder({ locale: null })).language).to.equal(undefined);
+    });
+
     it('maps the SFCC order state to a Seet event', () => {
         const { service } = load();
         expect(service.mapEvent(createOrder({ status: 4 }))).to.equal('order.placed');

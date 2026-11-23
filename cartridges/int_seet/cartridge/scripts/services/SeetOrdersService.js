@@ -188,14 +188,15 @@ function getCountryCode(order) {
 function buildOrderPayload(order, now) {
     var billingAddress = order.getBillingAddress();
     var locale = order.getCustomerLocaleID() || '';
-    var language = locale.substring(0, 2).toLowerCase();
+    // "default" and other IDs that do not start with a language code carry no language.
+    var languageMatch = /^([A-Za-z]{2})(_|$)/.exec(locale);
     var total = order.getTotalGrossPrice();
 
     return applyEvent({
         order_id: order.getOrderNo(),
         channel: 'online',
         country: getCountryCode(order),
-        language: /^[a-z]{2}$/.test(language) ? language : undefined,
+        language: languageMatch ? languageMatch[1].toLowerCase() : undefined,
         placed_at: order.getCreationDate().toISOString(),
         total: total && total.isAvailable() ? total.getValue() : undefined,
         currency: order.getCurrencyCode(),
