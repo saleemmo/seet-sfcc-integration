@@ -69,7 +69,7 @@ describe('SeetReviewsService', () => {
         env.prefs.seetStoreId = 'store_2';
         reviews.getProductRating('P1');
         expect(env.calls).to.have.length(2);
-        expect(Object.keys(env.cacheStore)).to.deep.equal(['RefArch|store_1|rating|P1', 'RefArch|store_2|rating|P1']);
+        expect(Object.keys(env.cacheStore)).to.deep.equal(['RefArch|store_1||rating|P1', 'RefArch|store_2||rating|P1']);
     });
 
     it('degrades gracefully and does not cache failures', () => {
@@ -121,5 +121,19 @@ describe('SeetReviewsService', () => {
         expect(env.calls[0].headers).to.not.have.property('Authorization');
         expect(env.calls[0].headers).to.include({ Origin: 'https://shop.example.com', Referer: 'https://shop.example.com/' });
         expect(reviews.getProductRating('P1;P2')).to.deep.equal({ available: false, error: 'INVALID_PRODUCT_ID' });
+    });
+
+    it('does not serve a response cached for one storefront host to another host', () => {
+        const { env, reviews } = setup(() => ({ statusCode: 200, text: JSON.stringify(RATING) }));
+        try {
+            global.request = { httpHost: 'shop.example.com' };
+            reviews.getProductRating('P1');
+            reviews.getProductRating('P1');
+            global.request = { httpHost: 'other.example.com' };
+            reviews.getProductRating('P1');
+        } finally {
+            delete global.request;
+        }
+        expect(env.calls.map((call) => call.headers.Origin)).to.deep.equal(['https://shop.example.com', 'https://other.example.com']);
     });
 });

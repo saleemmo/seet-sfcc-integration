@@ -40,12 +40,32 @@ function getCached(key, loader) {
 }
 
 /**
- * Tenant-scoped cache key: site and store are always part of the key.
+ * @returns {string} host of the current storefront request, or empty string
+ */
+function getStorefrontHost() {
+    var host = typeof request !== 'undefined' && request ? request.httpHost : null;
+    return host ? String(host).toLowerCase() : '';
+}
+
+/**
+ * Seet only serves a store's reviews to its allowed storefront domains and
+ * checks the Origin (or Referer) header, so the storefront host is sent on its behalf.
+ * @returns {Object|null} request headers
+ */
+function getStorefrontHeaders() {
+    var host = getStorefrontHost();
+    return host ? { Origin: 'https://' + host, Referer: 'https://' + host + '/' } : null;
+}
+
+/**
+ * Tenant-scoped cache key: site and store are always part of the key. The
+ * storefront host is part of it too, because Seet decides per host whether
+ * the store's reviews may be shown.
  * @param {string[]} parts - key segments
  * @returns {string} cache key
  */
 function buildCacheKey(parts) {
-    return [SeetConfig.getSiteId(), SeetConfig.getStoreId()].concat(parts).join('|');
+    return [SeetConfig.getSiteId(), SeetConfig.getStoreId(), getStorefrontHost()].concat(parts).join('|');
 }
 
 /**
@@ -62,16 +82,6 @@ function unavailable(type) {
  */
 function isQueryableProductId(productId) {
     return SeetProductHelper.isValidProductId(productId) && !LIST_SEPARATORS.test(productId);
-}
-
-/**
- * Seet only serves a store's reviews to its allowed storefront domains and
- * checks the Origin (or Referer) header, so the storefront host is sent on its behalf.
- * @returns {Object|null} request headers
- */
-function getStorefrontHeaders() {
-    var host = typeof request !== 'undefined' && request ? request.httpHost : null;
-    return host ? { Origin: 'https://' + host, Referer: 'https://' + host + '/' } : null;
 }
 
 /**

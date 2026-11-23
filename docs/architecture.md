@@ -42,7 +42,7 @@ product the reviews are read from.
    reads Seet's public review endpoints with the store's public key and the storefront
    host as `Origin` (Seet only answers for the store's allowed domains).
 3. Successful responses are stored in the `SeetReviews` custom cache (10 minutes) under keys
-   scoped by site ID and store ID. Failures are never cached.
+   scoped by site ID, store ID and storefront host. Failures are never cached.
 4. Fragments are page cached for `seetCacheMinutes`; a fallback (Seet unavailable) is cached for 5 minutes.
 5. The `seet.http.reviews` profile has a 2 s timeout and a circuit breaker. When Seet is down,
    the rating renders nothing and the reviews section shows a "temporarily unavailable" message.
@@ -73,7 +73,7 @@ maps to it (by default `COMPLETED`). Seet decides when to send review requests.
 - Each site has its own public key (`seetStoreId`) and can use its own service credential (`seetServiceCredentialId`).
 - Seet derives the store from the key: the public key for reviews, the secret key for orders.
   Both keys of a site must come from the same Seet store; Seet offers no way to check this from the cartridge.
-- Cache keys include site ID and store ID.
+- Cache keys include site ID, store ID and storefront host.
 - Outbox records keep the store ID they were created for. A record is never sent if the
   site is now configured for another store.
 
