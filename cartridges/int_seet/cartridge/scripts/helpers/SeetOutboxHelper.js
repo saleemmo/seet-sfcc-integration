@@ -34,7 +34,7 @@ var DEFAULTS = {
     lockTimeoutMinutes: 30
 };
 var MINUTE_MS = 60 * 1000;
-var ABORT_UNAVAILABLE_REASONS = ['CIRCUIT_BROKEN', 'RATE_LIMITED', 'DISABLED'];
+var ABORT_UNAVAILABLE_REASONS = ['CIRCUIT_BROKEN', 'RATE_LIMITED', 'DISABLED', 'CONFIG_PROBLEM'];
 
 var log = Logger.getLogger('seet', 'SeetOutbox');
 

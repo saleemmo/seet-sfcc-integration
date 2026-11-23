@@ -130,10 +130,13 @@ describe('SeetOutboxHelper', () => {
             expect(record(ctx.env, 'A1').custom).to.include({ status: 'PENDING', retryCount: 0 });
         });
 
-        it('aborts the batch when the circuit breaker is open', () => {
-            const ctx = setup({ respond: () => ({ unavailable: 'CIRCUIT_BROKEN' }) });
-            enqueueAndBackdate(ctx);
-            expect(ctx.outbox.processDue('PENDING', ctx.options, NOW).aborted).to.equal(true);
+        ['CIRCUIT_BROKEN', 'CONFIG_PROBLEM'].forEach((reason) => {
+            it(`aborts the batch without consuming a retry when the service reports ${reason}`, () => {
+                const ctx = setup({ respond: () => ({ unavailable: reason }) });
+                enqueueAndBackdate(ctx);
+                expect(ctx.outbox.processDue('PENDING', ctx.options, NOW).aborted).to.equal(true);
+                expect(record(ctx.env).custom).to.include({ status: 'PENDING', retryCount: 0 });
+            });
         });
 
         it('skips records already claimed by another run', () => {
