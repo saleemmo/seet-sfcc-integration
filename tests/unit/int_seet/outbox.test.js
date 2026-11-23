@@ -173,4 +173,68 @@ describe('SeetOutboxHelper', () => {
         expect(ctx.outbox.recoverStale(ctx.options, NOW)).to.equal(1);
         expect(rec.custom).to.include({ status: 'FAILED', retryCount: 1 });
     });
+
+    describe('queueOrderUpdates', () => {
+        const ok = { respond: () => ({ statusCode: 200, text: '{"message":"Order event received.","data":{}}' }) };
+        function syncPlacedOrder(ctx) {
+            enqueueAndBackdate(ctx);
+            ctx.outbox.processDue('PENDING', ctx.options, NOW);
+        }
+
+        it('remembers the delivered event and leaves unchanged orders alone', () => {
+            const ctx = setup(ok);
+            syncPlacedOrder(ctx);
+            expect(record(ctx.env).custom).to.include({ status: 'SYNCED', lastSyncedEvent: 'order.placed' });
+            ctx.env.orders['00012345'] = createOrder({ lastModified: NOW });
+            expect(ctx.outbox.queueOrderUpdates(ctx.options, NOW)).to.deep.equal({
+                scanned: 1, queued: 0, updated: 0, errors: 0
+            });
+            expect(record(ctx.env).custom.status).to.equal('SYNCED');
+        });
+
+        it('queues a synced order again when its status changes and sends the new event once', () => {
+            const ctx = setup(ok);
+            syncPlacedOrder(ctx);
+            const later = new Date(NOW.getTime() + (60 * MINUTE));
+            ctx.env.orders['00012345'] = createOrder({ status: 5, shippingStatus: 2, lastModified: later });
+            expect(ctx.outbox.queueOrderUpdates(ctx.options, later)).to.include({ updated: 1 });
+            expect(record(ctx.env).custom).to.include({ status: 'PENDING', retryCount: 0 });
+            expect(ctx.env.calls).to.have.length(1);
+
+            ctx.outbox.processDue('PENDING', ctx.options, later);
+            expect(ctx.env.calls[1].body).to.include({
+                event: 'order.delivered', order_id: '00012345', delivered_at: later.toISOString()
+            });
+            expect(record(ctx.env).custom).to.include({ status: 'SYNCED', lastSyncedEvent: 'order.delivered', payload: null });
+            expect(ctx.outbox.queueOrderUpdates(ctx.options, later)).to.include({ updated: 0 });
+        });
+
+        it('queues placed orders that have no outbox record and ignores old or unplaced orders', () => {
+            const ctx = setup();
+            ctx.env.orders.A = createOrder({ orderNo: 'A', lastModified: NOW });
+            ctx.env.orders.B = createOrder({ orderNo: 'B', status: 0, lastModified: NOW });
+            ctx.env.orders.C = createOrder({ orderNo: 'C', lastModified: new Date(NOW.getTime() - (25 * 60 * MINUTE)) });
+            expect(ctx.outbox.queueOrderUpdates(ctx.options, NOW)).to.deep.equal({
+                scanned: 2, queued: 1, updated: 0, errors: 0
+            });
+            expect(record(ctx.env, 'A').custom.status).to.equal('PENDING');
+            expect(record(ctx.env, 'B')).to.equal(undefined);
+            expect(ctx.env.calls).to.have.length(0);
+        });
+
+        it('does not touch records that are in flight, failed or owned by another store', () => {
+            const ctx = setup(ok);
+            syncPlacedOrder(ctx);
+            const delivered = createOrder({ status: 5, lastModified: NOW });
+            ctx.env.orders['00012345'] = delivered;
+            ['PROCESSING', 'FAILED', 'PENDING'].forEach((status) => {
+                record(ctx.env).custom.status = status;
+                expect(ctx.outbox.queueOrderUpdates(ctx.options, NOW).updated).to.equal(0);
+                expect(record(ctx.env).custom.status).to.equal(status);
+            });
+            record(ctx.env).custom.status = 'SYNCED';
+            ctx.env.prefs.seetStoreId = 'store_2';
+            expect(ctx.outbox.queueOrderUpdates(ctx.options, NOW).updated).to.equal(0);
+        });
+    });
 });

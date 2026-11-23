@@ -1,18 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jobs xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01">
     <!--
-        One job with two steps, so export and retry never run concurrently
+        One job with three steps, so queueing, export and retry never run concurrently
         (B2C Commerce does not start a job while a previous run is still active).
         Replace site-id "RefArch" with the merchant's site ID before importing.
         The trigger is imported disabled; enable it in Business Manager after configuration.
     -->
     <job job-id="Seet-SyncOrders" priority="0">
-        <description>Exports placed orders from the Seet order outbox to Seet and retries failed deliveries.</description>
+        <description>Sends placed orders and their status changes from the Seet order outbox to Seet and retries failed deliveries.</description>
         <parameters/>
         <flow>
             <context site-id="RefArch"/>
+            <step step-id="QueueOrderUpdates" type="custom.Seet.QueueOrderUpdates" enforce-restart="false">
+                <description>Queues orders whose status changed (shipped, delivered, cancelled) since they were sent.</description>
+                <parameters>
+                    <parameter name="LookbackHours">24</parameter>
+                </parameters>
+                <rules>
+                    <on-exit status="ERROR">
+                        <continue/>
+                    </on-exit>
+                </rules>
+            </step>
             <step step-id="ExportOrders" type="custom.Seet.ExportOrders" enforce-restart="false">
-                <description>First delivery attempt for PENDING records.</description>
+                <description>First delivery attempt for PENDING records (new orders and status changes).</description>
                 <parameters>
                     <parameter name="BatchSize">50</parameter>
                     <parameter name="MaxRetries">8</parameter>

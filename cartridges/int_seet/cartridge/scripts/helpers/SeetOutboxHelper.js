@@ -3,9 +3,12 @@
 /**
  * Order outbox backed by the SeetOrderOutbox custom object (site scoped, keyed
  * by order number). Checkout only writes an outbox record; scheduled jobs
- * deliver records to Seet with retries and exponential backoff.
+ * deliver records to Seet with retries and exponential backoff. Seet upserts
+ * an order by its number, so one record per order carries the latest event:
+ * when the order status later changes (shipped, delivered, cancelled), the
+ * SYNCED record is queued again with the new event.
  *
- * Lifecycle: PENDING -> PROCESSING -> SYNCED
+ * Lifecycle: PENDING -> PROCESSING -> SYNCED (-> PENDING when the order event changes)
  *                                  -> FAILED (nextRetryAt set: retried by RetryFailedOrders)
  *                                  -> FAILED (nextRetryAt empty: retries exhausted / permanent error)
  */
@@ -31,8 +34,10 @@ var DEFAULTS = {
     maxRetries: 8,
     baseDelayMinutes: 5,
     maxDelayMinutes: 720,
-    lockTimeoutMinutes: 30
+    lockTimeoutMinutes: 30,
+    lookbackHours: 24
 };
+var HOUR_MS = 60 * 60 * 1000;
 var MINUTE_MS = 60 * 1000;
 var ABORT_UNAVAILABLE_REASONS = ['CIRCUIT_BROKEN', 'RATE_LIMITED', 'DISABLED', 'CONFIG_PROBLEM'];
 
@@ -72,7 +77,8 @@ function getOptions(params) {
         maxRetries: bounded(source.MaxRetries, DEFAULTS.maxRetries, 1, 50),
         baseDelayMinutes: bounded(source.BaseDelayMinutes, DEFAULTS.baseDelayMinutes, 1, 1440),
         maxDelayMinutes: bounded(source.MaxDelayMinutes, DEFAULTS.maxDelayMinutes, 1, 10080),
-        lockTimeoutMinutes: bounded(source.LockTimeoutMinutes, DEFAULTS.lockTimeoutMinutes, 5, 1440)
+        lockTimeoutMinutes: bounded(source.LockTimeoutMinutes, DEFAULTS.lockTimeoutMinutes, 5, 1440),
+        lookbackHours: bounded(source.LookbackHours, DEFAULTS.lookbackHours, 1, 720)
     };
 }
 
@@ -207,10 +213,12 @@ function release(record, status) {
 /**
  * Marks a record as delivered and removes the payload (personal data) from it.
  * @param {dw.object.CustomObject} record - outbox record
+ * @param {string} event - Seet order event that was delivered
  */
-function markSynced(record) {
+function markSynced(record, event) {
     Transaction.wrap(function () {
         record.custom.status = STATUS.SYNCED;
+        record.custom.lastSyncedEvent = event || null;
         record.custom.lastError = null;
         record.custom.nextRetryAt = null;
         record.custom.payload = null;
@@ -309,7 +317,7 @@ function deliver(record, fromStatus, options, now) {
 
     var result = SeetOrdersService.sendOrder(payload, record.custom.idempotencyKey);
     if (result.ok || result.statusCode === 409) {
-        markSynced(record);
+        markSynced(record, payload.event);
         return 'SYNCED';
     }
 
@@ -384,6 +392,77 @@ function processDue(fromStatus, options, currentTime) {
 }
 
 /**
+ * Queues a SYNCED record again when the order's Seet event differs from the
+ * one that was delivered. Records in any other status already send the current
+ * event on their next attempt.
+ * @param {dw.order.Order} order - order
+ * @param {dw.object.CustomObject} record - outbox record of the order
+ * @param {Date} now - current time
+ * @returns {boolean} whether the record was queued again
+ */
+function requeueIfEventChanged(order, record, now) {
+    if (getStatus(record) !== STATUS.SYNCED || record.custom.storeId !== SeetConfig.getStoreId()) {
+        return false;
+    }
+    var event = SeetOrdersService.mapEvent(order);
+    if (event === (record.custom.lastSyncedEvent || SeetOrdersService.PLACED_EVENT)) {
+        return false;
+    }
+    var payload = JSON.stringify(SeetOrdersService.buildOrderPayload(order, now));
+    var queued = false;
+    Transaction.wrap(function () {
+        if (getStatus(record) !== STATUS.SYNCED) {
+            return;
+        }
+        record.custom.payload = payload;
+        record.custom.status = STATUS.PENDING;
+        record.custom.retryCount = 0;
+        record.custom.lastError = null;
+        record.custom.nextRetryAt = now;
+        queued = true;
+    });
+    return queued;
+}
+
+/**
+ * Scans recently modified orders and queues the ones whose status changed
+ * since they were delivered to Seet. Orders without an outbox record (for
+ * example orders placed through an API instead of the storefront checkout)
+ * are queued as well. Never calls the Seet API.
+ * @param {Object} options - job options
+ * @param {Date} [currentTime] - injectable clock
+ * @returns {{scanned: number, queued: number, updated: number, errors: number}} statistics
+ */
+function queueOrderUpdates(options, currentTime) {
+    var now = currentTime || new Date();
+    var since = new Date(now.getTime() - (options.lookbackHours * HOUR_MS));
+    var stats = {
+        scanned: 0,
+        queued: 0,
+        updated: 0,
+        errors: 0
+    };
+    OrderMgr.processOrders(function (order) {
+        stats.scanned += 1;
+        try {
+            if (!isPlaced(order)) {
+                return;
+            }
+            var record = CustomObjectMgr.getCustomObject(OUTBOX_TYPE, order.getOrderNo());
+            if (!record) {
+                stats.queued += enqueue(order).queued ? 1 : 0;
+            } else if (requeueIfEventChanged(order, record, now)) {
+                stats.updated += 1;
+            }
+        } catch (e) {
+            stats.errors += 1;
+            log.error('Could not queue the status update of order {0}: {1}', order.getOrderNo(), e.message);
+        }
+    }, 'lastModified >= {0}', since);
+    return stats;
+}
+
+/**
  * Records stuck in PROCESSING (job crashed or timed out mid-request) are moved
  * to FAILED so they are retried. Resending is safe thanks to the idempotency key.
  * @param {Object} options - job options
@@ -414,5 +493,6 @@ module.exports = {
     markFailed: markFailed,
     shouldAbortBatch: shouldAbortBatch,
     processDue: processDue,
+    queueOrderUpdates: queueOrderUpdates,
     recoverStale: recoverStale
 };

@@ -76,6 +76,14 @@
                 <externally-managed-flag>false</externally-managed-flag>
                 <default-value>0</default-value>
             </attribute-definition>
+            <attribute-definition attribute-id="lastSyncedEvent">
+                <display-name xml:lang="x-default">Last Synced Event</display-name>
+                <description xml:lang="x-default">Seet order event (for example order.delivered) of the last successful delivery.</description>
+                <type>string</type>
+                <mandatory-flag>false</mandatory-flag>
+                <externally-managed-flag>false</externally-managed-flag>
+                <min-length>0</min-length>
+            </attribute-definition>
             <attribute-definition attribute-id="lastError">
                 <display-name xml:lang="x-default">Last Error</display-name>
                 <description xml:lang="x-default">Last delivery error (no personal data).</description>
@@ -108,6 +116,7 @@
                 <attribute attribute-id="idempotencyKey"/>
                 <attribute attribute-id="payload"/>
                 <attribute attribute-id="status"/>
+                <attribute attribute-id="lastSyncedEvent"/>
                 <attribute attribute-id="retryCount"/>
                 <attribute attribute-id="lastError"/>
                 <attribute attribute-id="nextRetryAt"/>

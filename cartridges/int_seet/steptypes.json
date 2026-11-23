@@ -2,6 +2,47 @@
     "step-types": {
         "script-module-step": [
             {
+                "@type-id": "custom.Seet.QueueOrderUpdates",
+                "@supports-parallel-execution": "false",
+                "@supports-site-context": "true",
+                "@supports-organization-context": "false",
+                "description": "Queues orders whose status changed (shipped, delivered, cancelled) for export to Seet. Does not call the Seet API.",
+                "module": "int_seet/cartridge/scripts/jobs/QueueOrderUpdates.js",
+                "function": "execute",
+                "transactional": "false",
+                "timeout-in-seconds": "1800",
+                "parameters": {
+                    "parameter": [
+                        {
+                            "@name": "LookbackHours",
+                            "@type": "long",
+                            "@required": "false",
+                            "@trim": "true",
+                            "description": "Orders modified within this many hours are checked for a status change. Must be longer than the longest expected gap between job runs.",
+                            "default-value": "24",
+                            "min-value": "1",
+                            "max-value": "720"
+                        }
+                    ]
+                },
+                "status-codes": {
+                    "status": [
+                        {
+                            "@code": "ERROR",
+                            "description": "Unexpected error."
+                        },
+                        {
+                            "@code": "DISABLED",
+                            "description": "Seet order sync is disabled or not configured for the site."
+                        },
+                        {
+                            "@code": "OK",
+                            "description": "Step finished; the message contains the number of scanned and queued orders."
+                        }
+                    ]
+                }
+            },
+            {
                 "@type-id": "custom.Seet.ExportOrders",
                 "@supports-parallel-execution": "false",
                 "@supports-site-context": "true",

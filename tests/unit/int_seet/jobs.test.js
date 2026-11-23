@@ -9,7 +9,11 @@ describe('Seet jobs', () => {
         const env = createEnv(options);
         const load = createLoader(env);
         return {
-            env, load, exportJob: load('scripts/jobs/ExportOrders'), retryJob: load('scripts/jobs/RetryFailedOrders')
+            env,
+            load,
+            exportJob: load('scripts/jobs/ExportOrders'),
+            retryJob: load('scripts/jobs/RetryFailedOrders'),
+            queueJob: load('scripts/jobs/QueueOrderUpdates')
         };
     }
 
@@ -17,6 +21,7 @@ describe('Seet jobs', () => {
         const ctx = setup({ prefs: { seetOrderSyncEnabled: false } });
         expect(ctx.exportJob.execute({}).code).to.equal('DISABLED');
         expect(ctx.retryJob.execute({}).code).to.equal('DISABLED');
+        expect(ctx.queueJob.execute({}).code).to.equal('DISABLED');
     });
 
     it('export queued orders and report statistics', () => {
@@ -34,5 +39,14 @@ describe('Seet jobs', () => {
         ctx.env.customObjects['SeetOrderOutbox|00012345'].custom.nextRetryAt = new Date(Date.now() - 1000);
         const status = ctx.exportJob.execute({});
         expect(status).to.include({ status: 1, code: 'ABORTED' });
+    });
+
+    it('queue recently modified orders and report statistics', () => {
+        const ctx = setup();
+        ctx.env.orders['00012345'] = createOrder({ lastModified: new Date() });
+        const status = ctx.queueJob.execute({ LookbackHours: 2 });
+        expect(status.status).to.equal(0);
+        expect(JSON.parse(status.message)).to.include({ scanned: 1, queued: 1 });
+        expect(ctx.env.calls).to.have.length(0);
     });
 });

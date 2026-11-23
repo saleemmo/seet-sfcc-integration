@@ -193,7 +193,15 @@ function createEnv(options = {}) {
         'dw/svc/LocalServiceRegistry': LocalServiceRegistry,
         'dw/object/CustomObjectMgr': CustomObjectMgr,
         'dw/order/Order': Order,
-        'dw/order/OrderMgr': { getOrder: (orderNo) => env.orders[orderNo] || null },
+        'dw/order/OrderMgr': {
+            getOrder: (orderNo) => env.orders[orderNo] || null,
+            processOrders: (callback, query, since) => {
+                if (query !== 'lastModified >= {0}') {
+                    throw new Error(`Unsupported query in mock: ${query}`);
+                }
+                Object.values(env.orders).filter((order) => order.getLastModified() >= since).forEach(callback);
+            }
+        },
         'dw/catalog/ProductMgr': { getProduct: (id) => env.products[id] || null },
         'dw/web/URLUtils': { https: (route, name, value) => `https://shop.example.com/${route}?${name}=${encodeURIComponent(value)}` },
         'dw/util/Calendar': Calendar,
@@ -250,6 +258,7 @@ function createOrder(overrides = {}) {
         getTotalGrossPrice: () => ({ isAvailable: () => true, getValue: () => 250.5 }),
         getAllProductLineItems: () => createCollection(lineItems),
         getCreationDate: () => new Date('2026-11-23T18:00:00Z'),
+        getLastModified: () => overrides.lastModified || new Date('2026-11-23T18:00:00Z'),
         getPaymentInstruments: () => { throw new Error('payment data must not be read'); }
     };
 }
