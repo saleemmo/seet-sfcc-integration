@@ -201,10 +201,11 @@ function createEnv(options = {}) {
     return env;
 }
 
-function createProduct(id, { master = null, online = true } = {}) {
+function createProduct(id, { master = null, online = true, variationGroup = false } = {}) {
     return {
         getID: () => id,
-        isVariant: () => Boolean(master),
+        isVariant: () => Boolean(master) && !variationGroup,
+        isVariationGroup: () => variationGroup,
         getMasterProduct: () => master,
         isOnline: () => online
     };

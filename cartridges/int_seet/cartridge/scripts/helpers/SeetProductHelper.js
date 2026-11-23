@@ -34,7 +34,7 @@ function getReviewProductId(product) {
     if (!product) {
         return null;
     }
-    if (product.isVariant()) {
+    if (product.isVariant() || product.isVariationGroup()) {
         var master = product.getMasterProduct();
         if (master) {
             return master.getID();
