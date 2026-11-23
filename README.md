@@ -18,7 +18,7 @@ The cartridge only handles configuration, data mapping, storefront rendering and
 ## Requirements
 
 - SFRA storefront (`app_storefront_base`)
-- Node.js 18.20.8 or later (`.nvmrc` pins 24) and npm
+- Node.js 20.19.0 or later (`.nvmrc` pins 24) and npm
 - `xmllint` to validate metadata, `zip` to package it
 - A Seet store and its API key
 
