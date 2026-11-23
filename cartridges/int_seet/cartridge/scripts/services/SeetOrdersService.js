@@ -157,12 +157,14 @@ function buildItems(order) {
         if (!productId) {
             return;
         }
-        if (Object.prototype.hasOwnProperty.call(byProductId, productId)) {
-            byProductId[productId].quantity += Math.max(1, Math.round(lineItem.getQuantityValue() || 1));
+        // Prefixed so no product ID can name a built-in Object property such as "constructor" or "__proto__".
+        var key = 'id:' + productId;
+        if (byProductId[key]) {
+            byProductId[key].quantity += Math.max(1, Math.round(lineItem.getQuantityValue() || 1));
             return;
         }
-        byProductId[productId] = buildItem(lineItem, productId);
-        items.push(byProductId[productId]);
+        byProductId[key] = buildItem(lineItem, productId);
+        items.push(byProductId[key]);
     });
     return items;
 }

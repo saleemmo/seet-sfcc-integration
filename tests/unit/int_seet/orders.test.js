@@ -45,6 +45,11 @@ describe('SeetOrdersService', () => {
         expect(service.buildOrderPayload(twice).items[0].quantity).to.equal(4);
         const odd = { ...lineItem, getProduct: () => null, getProductID: () => 'constructor' };
         expect(service.buildOrderPayload(createOrder({ lineItems: [odd] })).items.map((item) => item.sku)).to.deep.equal(['constructor']);
+        const proto = { ...lineItem, getProduct: () => null, getProductID: () => '__proto__' };
+        expect(service.buildOrderPayload(createOrder({ lineItems: [proto, proto] })).items)
+            .to.deep.include({
+                sku: '__proto__', external_id: '__proto__', name: 'Shirt', quantity: 4
+            }).and.have.length(1);
     });
 
     it('sends a language only when the order locale starts with a language code', () => {
