@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `seetEnabled` | Boolean | false | Master switch. |
 | `seetStoreId` | String | – | Seet store ID (`A-Z a-z 0-9 _ -`, max 64). Must belong to the API key. |
-| `seetApiBaseUrl` | String | – | HTTPS base URL. Empty = URL of the service credential. |
+| `seetApiBaseUrl` | String | – | Optional HTTPS base URL. Must be on the same host as the service credential URL, so a preference editor cannot redirect the API key. Empty = URL of the service credential. |
 | `seetServiceCredentialId` | String | – | Optional credential override (see below). |
 | `seetReviewsEnabled` | Boolean | false | Render ratings and reviews. |
 | `seetOrderSyncEnabled` | Boolean | false | Queue and export orders. |

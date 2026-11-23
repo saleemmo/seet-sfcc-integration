@@ -30,7 +30,7 @@ function createEnv(options = {}) {
             ...(options.prefs || {})
         },
         credentials: {
-            'seet.http.api.cred': { url: 'https://cred.seet.test', password: 'key_default' },
+            'seet.http.api.cred': { url: 'https://api.seet.test', password: 'key_default' },
             ...(options.credentials || {})
         },
         calls: [],

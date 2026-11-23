@@ -26,7 +26,7 @@ describe('SeetService', () => {
     it('uses a per-site credential override for multi-store realms', () => {
         const { env, service } = setup({
             prefs: { seetServiceCredentialId: 'seet.http.api.cred.brandB', seetStoreId: 'store_B' },
-            credentials: { 'seet.http.api.cred.brandB': { url: 'https://cred.seet.test', password: 'key_B' } }
+            credentials: { 'seet.http.api.cred.brandB': { url: 'https://api.seet.test', password: 'key_B' } }
         });
         service.call(request);
         expect(env.calls[0].credentialId).to.equal('seet.http.api.cred.brandB');
@@ -37,7 +37,16 @@ describe('SeetService', () => {
     it('falls back to the credential URL when no base URL preference is set', () => {
         const { env, service } = setup({ prefs: { seetApiBaseUrl: '' } });
         service.call(request);
-        expect(env.calls[0].url).to.match(/^https:\/\/cred\.seet\.test\//);
+        expect(env.calls[0].url).to.match(/^https:\/\/api\.seet\.test\//);
+    });
+
+    it('never sends the API key to a host other than the credential URL host', () => {
+        const { env, service } = setup({ prefs: { seetApiBaseUrl: 'https://attacker.example' } });
+        expect(service.call(request).error.type).to.equal('CONFIG');
+        const sameHost = setup({ prefs: { seetApiBaseUrl: 'https://API.seet.test/v2' } });
+        sameHost.service.call(request);
+        expect(sameHost.env.calls[0].url).to.equal('https://API.seet.test/v2/api/v1/integrations/sfcc/health');
+        expect(env.calls).to.have.length(0);
     });
 
     it('does not call the API without an API key or with an insecure URL', () => {

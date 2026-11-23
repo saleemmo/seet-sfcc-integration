@@ -20,7 +20,7 @@
             </attribute-definition>
             <attribute-definition attribute-id="seetApiBaseUrl">
                 <display-name xml:lang="x-default">Seet: API Base URL</display-name>
-                <description xml:lang="x-default">HTTPS base URL of the Seet API, without trailing slash. Leave empty to use the URL of the service credential.</description>
+                <description xml:lang="x-default">Optional HTTPS base URL of the Seet API. Must be on the same host as the service credential URL. Leave empty to use the URL of the service credential.</description>
                 <type>string</type>
                 <mandatory-flag>false</mandatory-flag>
                 <externally-managed-flag>false</externally-managed-flag>

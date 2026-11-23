@@ -204,6 +204,15 @@ function normalizeResult(result) {
 }
 
 /**
+ * @param {string} url - absolute URL
+ * @returns {string} lower-case scheme://host[:port]
+ */
+function getOrigin(url) {
+    var match = /^https?:\/\/[^/?#]+/i.exec(url);
+    return match ? match[0].toLowerCase() : '';
+}
+
+/**
  * Performs an authenticated call to the Seet API for the current site's store.
  *
  * @param {Object} options - call options
@@ -240,9 +249,15 @@ function call(options) {
         return failure(ERROR_TYPES.CONFIG, null, 'API key (service credential password) is not configured', false);
     }
 
-    var baseUrl = SeetConfig.getApiBaseUrl() || String((credential && credential.getURL()) || '').replace(/\/+$/, '');
-    if (!SeetConfig.isHttpsUrl(baseUrl)) {
-        return failure(ERROR_TYPES.CONFIG, null, 'Seet API base URL must be an absolute HTTPS URL', false);
+    // The credential URL (managed with the API key by administrators) defines
+    // where the key may be sent; the site preference may only refine the path.
+    var credentialUrl = String((credential && credential.getURL()) || '').replace(/\/+$/, '');
+    if (!SeetConfig.isHttpsUrl(credentialUrl)) {
+        return failure(ERROR_TYPES.CONFIG, null, 'Service credential URL must be an absolute HTTPS URL', false);
+    }
+    var baseUrl = SeetConfig.getApiBaseUrl() || credentialUrl;
+    if (!SeetConfig.isHttpsUrl(baseUrl) || getOrigin(baseUrl) !== getOrigin(credentialUrl)) {
+        return failure(ERROR_TYPES.CONFIG, null, 'seetApiBaseUrl must be an HTTPS URL on the host of the service credential URL', false);
     }
 
     var result;
