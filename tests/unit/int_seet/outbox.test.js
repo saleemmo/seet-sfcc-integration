@@ -164,6 +164,18 @@ describe('SeetOutboxHelper', () => {
             ctx.outbox.processDue('PENDING', ctx.options, NOW);
             expect(ctx.env.calls[0].body).to.include({ event: 'order.delivered', delivered_at: NOW.toISOString() });
         });
+
+        it('keeps the time a status was first seen when the delivery is retried', () => {
+            let statusCode = 503;
+            const ctx = setup({ respond: () => ({ statusCode, text: '{}' }) });
+            enqueueAndBackdate(ctx);
+            ctx.env.orders['00012345'] = createOrder({ status: 5 });
+            ctx.outbox.processDue('PENDING', ctx.options, NOW);
+            statusCode = 200;
+            const later = new Date(NOW.getTime() + (60 * MINUTE));
+            ctx.outbox.processDue('FAILED', ctx.options, later);
+            expect(ctx.env.calls[1].body).to.include({ event: 'order.delivered', delivered_at: NOW.toISOString() });
+        });
     });
 
     it('recovers records stuck in PROCESSING', () => {

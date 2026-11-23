@@ -311,8 +311,13 @@ function deliver(record, fromStatus, options, now) {
     }
 
     var order = OrderMgr.getOrder(orderNo);
-    if (order) {
-        SeetOrdersService.applyEvent(payload, SeetOrdersService.mapEvent(order), now);
+    var event = order ? SeetOrdersService.mapEvent(order) : payload.event;
+    if (event !== payload.event) {
+        // Stored before sending, so a retry reports the same event time.
+        SeetOrdersService.applyEvent(payload, event, now);
+        Transaction.wrap(function () {
+            record.custom.payload = JSON.stringify(payload);
+        });
     }
 
     var result = SeetOrdersService.sendOrder(payload, record.custom.idempotencyKey);
