@@ -37,7 +37,8 @@ describe('SeetConfig', () => {
     });
 
     it('merges a custom order status mapping and ignores invalid JSON', () => {
-        expect(load({ seetOrderStatusMapping: '{"completed":"delivered"}' }).getOrderStatusMapping().COMPLETED).to.equal('delivered');
-        expect(load({ seetOrderStatusMapping: '{not json' }).getOrderStatusMapping().COMPLETED).to.equal('completed');
+        expect(load({ seetOrderStatusMapping: '{"completed":"order.shipped"}' }).getOrderStatusMapping().COMPLETED).to.equal('order.shipped');
+        expect(load({ seetOrderStatusMapping: '{"COMPLETED":"delivered"}' }).getOrderStatusMapping().COMPLETED).to.equal('order.delivered');
+        expect(load({ seetOrderStatusMapping: '{not json' }).getOrderStatusMapping().COMPLETED).to.equal('order.delivered');
     });
 });

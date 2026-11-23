@@ -32,7 +32,7 @@ describe('SeetOutboxHelper', () => {
             expect(custom).to.include({
                 status: 'PENDING', retryCount: 0, storeId: 'store_1', siteId: 'RefArch', idempotencyKey: 'sfcc:RefArch:00012345'
             });
-            expect(JSON.parse(custom.payload).external_order_id).to.equal('00012345');
+            expect(JSON.parse(custom.payload)).to.include({ order_id: '00012345', event: 'order.placed' });
             expect(ctx.env.calls).to.have.length(0);
         });
 
@@ -161,7 +161,7 @@ describe('SeetOutboxHelper', () => {
             enqueueAndBackdate(ctx);
             ctx.env.orders['00012345'] = createOrder({ status: 5, shippingStatus: 2 });
             ctx.outbox.processDue('PENDING', ctx.options, NOW);
-            expect(ctx.env.calls[0].body).to.include({ order_status: 'completed', shipping_status: 'shipped' });
+            expect(ctx.env.calls[0].body).to.include({ event: 'order.delivered', delivered_at: NOW.toISOString() });
         });
     });
 

@@ -15,15 +15,25 @@ var MAX_CACHE_MINUTES = 1440;
 var STORE_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 var HTTPS_URL_PATTERN = /^https:\/\/[^\s/?#]+(\/[^\s?#]*)?$/i;
 
+// SFCC order status (or the SHIPPED shipping status) -> Seet order event.
+// SFCC has no "delivered" status; COMPLETED is the closest default.
 var DEFAULT_ORDER_STATUS_MAPPING = {
-    CREATED: 'created',
-    NEW: 'placed',
-    OPEN: 'placed',
-    COMPLETED: 'completed',
-    CANCELLED: 'cancelled',
-    REPLACED: 'replaced',
-    FAILED: 'failed'
+    NEW: 'order.placed',
+    OPEN: 'order.placed',
+    SHIPPED: 'order.shipped',
+    COMPLETED: 'order.delivered',
+    CANCELLED: 'order.cancelled',
+    REPLACED: 'order.cancelled'
 };
+var ORDER_EVENTS = [
+    'order.placed',
+    'order.paid',
+    'order.shipped',
+    'order.delivered',
+    'order.cancelled',
+    'order.refunded',
+    'order.returned'
+];
 
 /**
  * @param {string} name - Site preference ID
@@ -131,9 +141,10 @@ function getCacheMinutes() {
 }
 
 /**
- * Mapping of SFCC order status names to Seet status values. Merchants can
- * override it with a JSON object in the seetOrderStatusMapping preference.
- * @returns {Object} status mapping
+ * Mapping of SFCC order status names (plus SHIPPED for the shipping status) to
+ * Seet order events. Merchants can override it with a JSON object in the
+ * seetOrderStatusMapping preference; values that are not Seet events are ignored.
+ * @returns {Object} status to event mapping
  */
 function getOrderStatusMapping() {
     var mapping = {};
@@ -146,7 +157,7 @@ function getOrderStatusMapping() {
             var custom = JSON.parse(raw);
             if (custom && typeof custom === 'object' && !Array.isArray(custom)) {
                 Object.keys(custom).forEach(function (key) {
-                    if (typeof custom[key] === 'string' && custom[key]) {
+                    if (ORDER_EVENTS.indexOf(custom[key]) > -1) {
                         mapping[key.toUpperCase()] = custom[key];
                     }
                 });
@@ -195,6 +206,7 @@ function isOrderSyncEnabled() {
 
 module.exports = {
     DEFAULT_REVIEW_PAGE_SIZE: DEFAULT_REVIEW_PAGE_SIZE,
+    ORDER_EVENTS: ORDER_EVENTS,
     MAX_REVIEW_PAGE_SIZE: MAX_REVIEW_PAGE_SIZE,
     isHttpsUrl: isHttpsUrl,
     getSiteId: getSiteId,

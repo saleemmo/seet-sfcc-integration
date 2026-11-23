@@ -195,6 +195,7 @@ function createEnv(options = {}) {
         'dw/order/Order': Order,
         'dw/order/OrderMgr': { getOrder: (orderNo) => env.orders[orderNo] || null },
         'dw/catalog/ProductMgr': { getProduct: (id) => env.products[id] || null },
+        'dw/web/URLUtils': { https: (route, name, value) => `https://shop.example.com/${route}?${name}=${encodeURIComponent(value)}` },
         'dw/util/Calendar': Calendar,
         'dw/util/StringUtils': { formatCalendar: (calendar, locale) => `${locale}:${calendar.date.toISOString().substring(0, 10)}` }
     };
@@ -207,6 +208,7 @@ function createProduct(id, { master = null, online = true, variationGroup = fals
         isVariant: () => Boolean(master) && !variationGroup,
         isVariationGroup: () => variationGroup,
         getMasterProduct: () => master,
+        getImage: () => ({ getHttpsURL: () => `https://cdn.example.com/${id}.jpg` }),
         isOnline: () => online
     };
 }
@@ -238,7 +240,14 @@ function createOrder(overrides = {}) {
         getCustomerLocaleID: () => 'ar_SA',
         getCustomerNo: () => overrides.customerNo === undefined ? 'customer_123' : overrides.customerNo,
         getCustomerEmail: () => 'customer@example.com',
-        getBillingAddress: () => ({ getPhone: () => '+966500000000' }),
+        getCustomerName: () => (overrides.customerName === undefined ? 'Sara Ali' : overrides.customerName),
+        getBillingAddress: () => ({
+            getPhone: () => '+966500000000',
+            getFullName: () => 'Billing Name',
+            getCountryCode: () => ({ value: 'ae' })
+        }),
+        getDefaultShipment: () => ({ getShippingAddress: () => ({ getCountryCode: () => ({ value: 'sa' }) }) }),
+        getTotalGrossPrice: () => ({ isAvailable: () => true, getValue: () => 250.5 }),
         getAllProductLineItems: () => createCollection(lineItems),
         getCreationDate: () => new Date('2026-11-23T18:00:00Z'),
         getPaymentInstruments: () => { throw new Error('payment data must not be read'); }

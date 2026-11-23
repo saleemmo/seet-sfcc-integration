@@ -304,9 +304,7 @@ function deliver(record, fromStatus, options, now) {
 
     var order = OrderMgr.getOrder(orderNo);
     if (order) {
-        var statuses = SeetOrdersService.mapStatuses(order);
-        payload.order_status = statuses.order_status;
-        payload.shipping_status = statuses.shipping_status;
+        SeetOrdersService.applyEvent(payload, SeetOrdersService.mapEvent(order), now);
     }
 
     var result = SeetOrdersService.sendOrder(payload, record.custom.idempotencyKey);

@@ -1,8 +1,10 @@
 'use strict';
 
 /**
- * Order payload mapping and order export calls to Seet. Only the data Seet
- * needs for review invitations is sent: no payment data, no addresses.
+ * Order payload mapping and order event calls to Seet
+ * (POST /integrations/orders). Seet upserts an order by its order_id, so every
+ * event carries the full order snapshot. Only the data Seet needs for review
+ * invitations is sent: no payment data, no street addresses.
  */
 
 var Order = require('dw/order/Order');
@@ -10,7 +12,18 @@ var SeetConfig = require('*/cartridge/scripts/helpers/SeetConfig');
 var SeetProductHelper = require('*/cartridge/scripts/helpers/SeetProductHelper');
 var SeetService = require('*/cartridge/scripts/services/SeetService');
 
-var ORDERS_PATH = '/api/v1/integrations/sfcc/orders';
+var ORDERS_PATH = '/integrations/orders';
+var PLACED_EVENT = 'order.placed';
+var MAX_URL_LENGTH = 2048;
+// Seet stamps these with its own receive time when they are missing, so the
+// time the cartridge first saw the status is sent and survives retries.
+var EVENT_TIME_FIELDS = {
+    'order.shipped': 'fulfilled_at',
+    'order.delivered': 'delivered_at',
+    'order.cancelled': 'cancelled_at',
+    'order.refunded': 'refunded_at',
+    'order.returned': 'returned_at'
+};
 
 /**
  * @returns {Object} map of SFCC order status code to status name
@@ -28,17 +41,6 @@ function getOrderStatusNames() {
 }
 
 /**
- * @returns {Object} map of SFCC shipping status code to Seet shipping status
- */
-function getShippingStatusNames() {
-    var names = {};
-    names[Order.SHIPPING_STATUS_NOTSHIPPED] = 'not_shipped';
-    names[Order.SHIPPING_STATUS_PARTSHIPPED] = 'partially_shipped';
-    names[Order.SHIPPING_STATUS_SHIPPED] = 'shipped';
-    return names;
-}
-
-/**
  * @param {dw.value.EnumValue|number} status - SFCC enum value
  * @returns {number} numeric status code
  */
@@ -50,16 +52,19 @@ function enumCode(status) {
 }
 
 /**
+ * Maps the current SFCC order state to the Seet order event. An order that is
+ * still open but fully shipped uses the SHIPPED mapping.
  * @param {dw.order.Order} order - order
- * @returns {{order_status: string, shipping_status: string}} mapped statuses
+ * @returns {string} Seet order event
  */
-function mapStatuses(order) {
-    var statusName = getOrderStatusNames()[enumCode(order.getStatus())] || 'UNKNOWN';
+function mapEvent(order) {
     var mapping = SeetConfig.getOrderStatusMapping();
-    return {
-        order_status: mapping[statusName] || statusName.toLowerCase(),
-        shipping_status: getShippingStatusNames()[enumCode(order.getShippingStatus())] || 'unknown'
-    };
+    var statusName = getOrderStatusNames()[enumCode(order.getStatus())];
+    var event = mapping[statusName] || PLACED_EVENT;
+    if (event === PLACED_EVENT && enumCode(order.getShippingStatus()) === Order.SHIPPING_STATUS_SHIPPED) {
+        event = mapping.SHIPPED || event;
+    }
+    return event;
 }
 
 /**
@@ -88,41 +93,123 @@ function toArray(collection) {
 }
 
 /**
- * Builds the order payload sent to Seet.
+ * Sets the event on a payload and records when the cartridge first saw it.
+ * @param {Object} payload - order payload
+ * @param {string} event - Seet order event
+ * @param {Date} [now] - current time
+ * @returns {Object} the payload
+ */
+function applyEvent(payload, event, now) {
+    var field = EVENT_TIME_FIELDS[event];
+    payload.event = event;
+    if (field && !payload[field]) {
+        payload[field] = (now || new Date()).toISOString();
+    }
+    return payload;
+}
+
+/**
+ * @param {*} url - candidate URL (dw.web.URL or string)
+ * @returns {string|undefined} absolute HTTPS URL or undefined
+ */
+function toHttpsUrl(url) {
+    var text = url ? String(url) : '';
+    return /^https:\/\/\S+$/.test(text) && text.length <= MAX_URL_LENGTH ? text : undefined;
+}
+
+/**
+ * @param {dw.order.ProductLineItem} lineItem - order line item
+ * @param {string} productId - Seet product ID (master product ID)
+ * @returns {Object} Seet order item
+ */
+function buildItem(lineItem, productId) {
+    var item = {
+        sku: productId,
+        external_id: productId,
+        name: lineItem.getProductName() || productId,
+        quantity: Math.max(1, Math.round(lineItem.getQuantityValue() || 1))
+    };
+    try {
+        var product = lineItem.getProduct();
+        var image = product && product.getImage('medium', 0);
+        item.url = toHttpsUrl(require('dw/web/URLUtils').https('Product-Show', 'pid', productId));
+        item.image_url = toHttpsUrl(image && image.getHttpsURL());
+    } catch (e) {
+        // links are optional
+    }
+    return item;
+}
+
+/**
+ * One item per reviewed (master) product: Seet keeps a single order item per product.
+ * @param {dw.order.Order} order - order
+ * @returns {Object[]} Seet order items
+ */
+function buildItems(order) {
+    var items = [];
+    var byProductId = {};
+    toArray(order.getAllProductLineItems()).forEach(function (lineItem) {
+        if (lineItem.isOptionProductLineItem()) {
+            return;
+        }
+        var productId = SeetProductHelper.getLineItemReviewProductId(lineItem);
+        if (!productId) {
+            return;
+        }
+        if (byProductId[productId]) {
+            byProductId[productId].quantity += Math.max(1, Math.round(lineItem.getQuantityValue() || 1));
+            return;
+        }
+        byProductId[productId] = buildItem(lineItem, productId);
+        items.push(byProductId[productId]);
+    });
+    return items;
+}
+
+/**
+ * @param {dw.order.Order} order - order
+ * @returns {string|undefined} two-letter country code of the shipping (or billing) address
+ */
+function getCountryCode(order) {
+    var shipment = order.getDefaultShipment();
+    var address = (shipment && shipment.getShippingAddress()) || order.getBillingAddress();
+    var code = address && address.getCountryCode();
+    var value = code && code.value !== undefined ? code.value : code;
+    return value && /^[A-Za-z]{2}$/.test(String(value)) ? String(value).toUpperCase() : undefined;
+}
+
+/**
+ * Builds the order event payload sent to Seet.
  * @param {dw.order.Order} order - placed order
+ * @param {Date} [now] - current time
  * @returns {Object} payload
  */
-function buildOrderPayload(order) {
+function buildOrderPayload(order, now) {
     var billingAddress = order.getBillingAddress();
-    var statuses = mapStatuses(order);
-    var items = toArray(order.getAllProductLineItems())
-        .filter(function (lineItem) {
-            return !lineItem.isOptionProductLineItem();
-        })
-        .map(function (lineItem) {
-            return {
-                product_id: SeetProductHelper.getLineItemReviewProductId(lineItem),
-                sku: lineItem.getProductID(),
-                name: lineItem.getProductName(),
-                quantity: lineItem.getQuantityValue()
-            };
-        });
+    var locale = order.getCustomerLocaleID() || '';
+    var language = locale.substring(0, 2).toLowerCase();
+    var total = order.getTotalGrossPrice();
 
-    return {
-        external_order_id: order.getOrderNo(),
-        external_site_id: SeetConfig.getSiteId(),
+    return applyEvent({
+        order_id: order.getOrderNo(),
+        channel: 'online',
+        country: getCountryCode(order),
+        language: /^[a-z]{2}$/.test(language) ? language : undefined,
+        placed_at: order.getCreationDate().toISOString(),
+        total: total && total.isAvailable() ? total.getValue() : undefined,
         currency: order.getCurrencyCode(),
-        locale: order.getCustomerLocaleID() || null,
-        order_status: statuses.order_status,
-        shipping_status: statuses.shipping_status,
         customer: {
-            external_id: order.getCustomerNo() || null,
-            email: order.getCustomerEmail() || null,
-            phone: (billingAddress && billingAddress.getPhone()) || null
+            name: order.getCustomerName() || (billingAddress && billingAddress.getFullName()) || 'Customer',
+            email: order.getCustomerEmail() || undefined,
+            phone: (billingAddress && billingAddress.getPhone()) || undefined
         },
-        items: items,
-        ordered_at: order.getCreationDate().toISOString()
-    };
+        items: buildItems(order),
+        metadata: {
+            platform: 'sfcc',
+            site_id: SeetConfig.getSiteId(),
+            locale: locale || undefined
+        }
+    }, mapEvent(order), now);
 }
 
 /**
@@ -142,7 +229,9 @@ function sendOrder(payload, idempotencyKey) {
 
 module.exports = {
     ORDERS_PATH: ORDERS_PATH,
-    mapStatuses: mapStatuses,
+    PLACED_EVENT: PLACED_EVENT,
+    mapEvent: mapEvent,
+    applyEvent: applyEvent,
     buildIdempotencyKey: buildIdempotencyKey,
     buildOrderPayload: buildOrderPayload,
     sendOrder: sendOrder
