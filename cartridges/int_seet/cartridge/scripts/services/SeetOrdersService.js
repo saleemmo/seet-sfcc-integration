@@ -61,7 +61,8 @@ function mapEvent(order) {
     var mapping = SeetConfig.getOrderStatusMapping();
     var statusName = getOrderStatusNames()[enumCode(order.getStatus())];
     var event = mapping[statusName] || PLACED_EVENT;
-    if (event === PLACED_EVENT && enumCode(order.getShippingStatus()) === Order.SHIPPING_STATUS_SHIPPED) {
+    var isOpen = statusName === 'NEW' || statusName === 'OPEN';
+    if (isOpen && enumCode(order.getShippingStatus()) === Order.SHIPPING_STATUS_SHIPPED) {
         event = mapping.SHIPPED || event;
     }
     return event;

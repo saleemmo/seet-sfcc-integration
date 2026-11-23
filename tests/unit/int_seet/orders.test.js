@@ -56,6 +56,9 @@ describe('SeetOrdersService', () => {
         const custom = load({ prefs: { seetOrderStatusMapping: '{"COMPLETED":"order.shipped","SHIPPED":"order.delivered"}' } }).service;
         expect(custom.mapEvent(createOrder({ status: 5, shippingStatus: 2 }))).to.equal('order.shipped');
         expect(custom.mapEvent(createOrder({ status: 4, shippingStatus: 2 }))).to.equal('order.delivered');
+        const paid = load({ prefs: { seetOrderStatusMapping: '{"OPEN":"order.paid"}' } }).service;
+        expect(paid.mapEvent(createOrder({ status: 4 }))).to.equal('order.paid');
+        expect(paid.mapEvent(createOrder({ status: 4, shippingStatus: 2 }))).to.equal('order.shipped');
     });
 
     it('records when a status was first seen and keeps it on later sends', () => {
