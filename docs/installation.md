@@ -47,13 +47,19 @@ For the Seet job steps, also add `int_seet` to the **Business Manager cartridge 
 (Administration > Sites > Manage Sites > Business Manager - Settings) if your instance
 resolves job step modules from it.
 
-## 4. Set the API key
+## 4. Set the Seet keys
+
+In the Seet dashboard, copy the store's public key (`pk_live_…`) and secret key
+(`sk_live_…`), enable the review widget, and add every storefront host to the allowed
+domains (or leave the list empty).
 
 **Administration > Operations > Services > Credentials > seet.http.api.cred**:
 
-- URL: Seet API base URL (HTTPS), e.g. the URL given by Seet
+- URL: Seet API base URL (HTTPS) including the version prefix, `https://<seet-host>/api/v1`
 - User: leave empty
-- Password: the store API key from the Seet dashboard
+- Password: the store's secret key (`sk_live_…`)
+
+The public key goes into the `seetStoreId` site preference in the next step.
 
 ## 5. Configure the site
 
@@ -85,5 +91,8 @@ scope, then enable the 15-minute trigger in **Schedule and History**.
 1. Open a product with reviews: the rating and reviews render; page through the reviews.
 2. Place an order: a `SeetOrderOutbox` record with status `PENDING` appears in
    **Merchant Tools > Custom Objects > Custom Object Editor**.
-3. Run `Seet-SyncOrders`: the record becomes `SYNCED`, and the order appears in Seet.
-4. Optional: `SEET_TEST_PRODUCT_ID=<pid> npm run test:integration -- --baseUrl https://<host>/on/demandware.store/Sites-<SiteID>-Site/<locale>`.
+3. Run `Seet-SyncOrders`: the record becomes `SYNCED` with `lastSyncedEvent` `order.placed`,
+   and the order appears in Seet.
+4. Set the order to `COMPLETED` and run the job again: `lastSyncedEvent` becomes
+   `order.delivered` and the order is delivered in Seet.
+5. Optional: `SEET_TEST_PRODUCT_ID=<pid> npm run test:integration -- --baseUrl https://<host>/on/demandware.store/Sites-<SiteID>-Site/<locale>`.

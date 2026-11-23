@@ -316,7 +316,7 @@ function deliver(record, fromStatus, options, now) {
     }
 
     var result = SeetOrdersService.sendOrder(payload, record.custom.idempotencyKey);
-    if (result.ok || result.statusCode === 409) {
+    if (result.ok) {
         markSynced(record, payload.event);
         return 'SYNCED';
     }
@@ -464,7 +464,7 @@ function queueOrderUpdates(options, currentTime) {
 
 /**
  * Records stuck in PROCESSING (job crashed or timed out mid-request) are moved
- * to FAILED so they are retried. Resending is safe thanks to the idempotency key.
+ * to FAILED so they are retried. Resending is safe: Seet updates the order it already has.
  * @param {Object} options - job options
  * @param {Date} [currentTime] - injectable clock
  * @returns {number} number of recovered records

@@ -258,7 +258,7 @@ function call(options) {
         return failure(ERROR_TYPES.CONFIG, null, 'Secret key (service credential password) is not configured', false);
     }
 
-    // The credential URL (managed with the API key by administrators) defines
+    // The credential URL (managed with the secret key by administrators) defines
     // where the key may be sent; the site preference may only refine the path.
     var credentialUrl = String((credential && credential.getURL()) || '').replace(/\/+$/, '');
     if (!SeetConfig.isHttpsUrl(credentialUrl)) {

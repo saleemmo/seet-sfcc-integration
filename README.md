@@ -11,8 +11,8 @@ The cartridge only handles configuration, data mapping, storefront rendering and
 |---|---|
 | Rating summary and reviews on the PDP | `Seet-Rating` / `Seet-Reviews` remote includes, ISML, page cache plus custom cache |
 | Review pagination | `Seet-ReviewsList` HTML fragment, progressive enhancement (no API calls from the browser) |
-| Order sync | `CheckoutServices-PlaceOrder` hook → `SeetOrderOutbox` custom object → `Seet-SyncOrders` job |
-| Authentication | Per-store API key stored in a Service Framework credential |
+| Order sync | `CheckoutServices-PlaceOrder` hook → `SeetOrderOutbox` custom object → `Seet-SyncOrders` job, including shipped, delivered and cancelled events |
+| Authentication | Per-store public key (reviews) in a site preference; secret key (orders) in a Service Framework credential |
 | Localisation | English and Arabic resource bundles, RTL-safe SCSS (logical properties) |
 
 ## Requirements
@@ -20,7 +20,7 @@ The cartridge only handles configuration, data mapping, storefront rendering and
 - SFRA storefront (`app_storefront_base`)
 - Node.js 20.19.0 or later (`.nvmrc` pins 24) and npm
 - `xmllint` to validate metadata, `zip` to package it
-- A Seet store and its API key
+- A Seet store with its public key and secret key
 
 ## Quick start
 
@@ -34,7 +34,7 @@ npm run package:metadata -- --site <SiteID>   # dist/seet_site_import.zip for Si
 ```
 
 Then follow [docs/installation.md](docs/installation.md) to import the metadata,
-add the cartridge to the site path, set the API key and add the ISML includes.
+add the cartridge to the site path, set the Seet keys and add the ISML includes.
 
 ## Scripts
 

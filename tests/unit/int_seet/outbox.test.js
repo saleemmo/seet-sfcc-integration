@@ -66,10 +66,11 @@ describe('SeetOutboxHelper', () => {
             expect(ctx.outbox.processDue('PENDING', ctx.options, NOW).selected).to.equal(0);
         });
 
-        it('treats 409 (already received) as synced', () => {
-            const ctx = setup({ respond: () => ({ statusCode: 409, text: '' }) });
+        it('does not retry orders Seet rejects as invalid (422)', () => {
+            const ctx = setup({ respond: () => ({ statusCode: 422, text: '{"message":"The customer.name field is required."}' }) });
             enqueueAndBackdate(ctx);
-            expect(ctx.outbox.processDue('PENDING', ctx.options, NOW).synced).to.equal(1);
+            expect(ctx.outbox.processDue('PENDING', ctx.options, NOW).dead).to.equal(1);
+            expect(record(ctx.env).custom).to.include({ status: 'FAILED', nextRetryAt: null });
         });
 
         it('does not process records scheduled in the future', () => {

@@ -39,7 +39,7 @@ describe('SeetService', () => {
         expect(env.calls[0].url).to.match(/^https:\/\/api\.seet\.test\//);
     });
 
-    it('never sends the API key to a host other than the credential URL host', () => {
+    it('never sends the secret key to a host other than the credential URL host', () => {
         const { env, service } = setup({ prefs: { seetApiBaseUrl: 'https://attacker.example' } });
         expect(service.call(request).error.type).to.equal('CONFIG');
         const sameHost = setup({ prefs: { seetApiBaseUrl: 'https://API.seet.test/api/v2' } });
@@ -51,7 +51,7 @@ describe('SeetService', () => {
         expect(setup({ prefs: { seetApiBaseUrl: 'https://api.seet.test:8443' } }).service.call(request).error.type).to.equal('CONFIG');
     });
 
-    it('does not call the API without an API key or with an insecure URL', () => {
+    it('does not call the API without a secret key or with an insecure URL', () => {
         let ctx = setup({ credentials: { 'seet.http.api.cred': { url: 'https://cred.seet.test', password: '' } } });
         expect(ctx.service.call(request).error.type).to.equal('CONFIG');
         ctx = setup({ prefs: { seetApiBaseUrl: '' }, credentials: { 'seet.http.api.cred': { url: 'http://cred.seet.test', password: 'k' } } });

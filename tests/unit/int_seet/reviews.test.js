@@ -119,7 +119,7 @@ describe('SeetReviewsService', () => {
             delete global.request;
         }
         expect(env.calls[0].headers).to.not.have.property('Authorization');
-        expect(env.calls[0].headers.Origin).to.equal('https://shop.example.com');
+        expect(env.calls[0].headers).to.include({ Origin: 'https://shop.example.com', Referer: 'https://shop.example.com/' });
         expect(reviews.getProductRating('P1;P2')).to.deep.equal({ available: false, error: 'INVALID_PRODUCT_ID' });
     });
 });

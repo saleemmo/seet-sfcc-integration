@@ -2,7 +2,7 @@
 
 /**
  * Reads and validates the Seet configuration stored in custom Site Preferences.
- * The API key is NOT a site preference: it lives in the service credential
+ * The secret key is NOT a site preference: it lives in the service credential
  * (see SeetService.js) and is never returned by this module.
  */
 

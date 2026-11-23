@@ -66,12 +66,12 @@ function isQueryableProductId(productId) {
 
 /**
  * Seet only serves a store's reviews to its allowed storefront domains and
- * checks the Origin header, so the storefront host is sent on its behalf.
+ * checks the Origin (or Referer) header, so the storefront host is sent on its behalf.
  * @returns {Object|null} request headers
  */
 function getStorefrontHeaders() {
     var host = typeof request !== 'undefined' && request ? request.httpHost : null;
-    return host ? { Origin: 'https://' + host } : null;
+    return host ? { Origin: 'https://' + host, Referer: 'https://' + host + '/' } : null;
 }
 
 /**
