@@ -329,6 +329,17 @@ function deliver(record, fromStatus, options, now) {
 }
 
 /**
+ * Removes a record that reached MaxRetries (e.g. after MaxRetries was lowered)
+ * from the retry schedule so it no longer occupies batch slots.
+ * @param {dw.object.CustomObject} record - outbox record
+ */
+function stopRetrying(record) {
+    Transaction.wrap(function () {
+        record.custom.nextRetryAt = null;
+    });
+}
+
+/**
  * Delivers due records with the given status.
  * @param {string} fromStatus - PENDING (first attempts) or FAILED (retries)
  * @param {Object} options - job options
@@ -351,7 +362,8 @@ function processDue(fromStatus, options, currentTime) {
     for (var i = 0; i < records.length; i += 1) {
         var record = records[i];
         if (fromStatus === STATUS.FAILED && (parseInt(record.custom.retryCount, 10) || 0) >= options.maxRetries) {
-            stats.skipped += 1;
+            stopRetrying(record);
+            stats.dead += 1;
         } else if (!claim(record, fromStatus, now)) {
             stats.skipped += 1;
         } else {

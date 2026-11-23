@@ -103,6 +103,17 @@ describe('SeetOutboxHelper', () => {
             expect(custom.lastError).to.include('HTTP | 422');
             expect(custom.lastError).to.not.include('customer@example.com');
 
+            const lowered = setup({ respond: () => ({ statusCode: 503, text: '' }) });
+            enqueueAndBackdate(lowered);
+            lowered.outbox.processDue('PENDING', lowered.options, NOW);
+            const failedRecord = record(lowered.env).custom;
+            failedRecord.retryCount = 3;
+            const loweredOpts = lowered.outbox.getOptions({ MaxRetries: 2 });
+            const due = new Date(failedRecord.nextRetryAt.getTime());
+            expect(lowered.outbox.processDue('FAILED', loweredOpts, due).dead).to.equal(1);
+            expect(failedRecord.nextRetryAt).to.equal(null);
+            expect(lowered.outbox.processDue('FAILED', loweredOpts, due).selected).to.equal(0);
+
             const retry = setup({ respond: () => ({ statusCode: 503, text: '' }) });
             enqueueAndBackdate(retry);
             const opts = retry.outbox.getOptions({ MaxRetries: 1 });
