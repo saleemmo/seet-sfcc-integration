@@ -43,6 +43,8 @@ describe('SeetOrdersService', () => {
         const twice = createOrder({ lineItems: [lineItem, lineItem] });
         expect(service.buildOrderPayload(twice).items).to.have.length(1);
         expect(service.buildOrderPayload(twice).items[0].quantity).to.equal(4);
+        const odd = { ...lineItem, getProduct: () => null, getProductID: () => 'constructor' };
+        expect(service.buildOrderPayload(createOrder({ lineItems: [odd] })).items.map((item) => item.sku)).to.deep.equal(['constructor']);
     });
 
     it('maps the SFCC order state to a Seet event', () => {

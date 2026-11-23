@@ -156,7 +156,7 @@ function buildItems(order) {
         if (!productId) {
             return;
         }
-        if (byProductId[productId]) {
+        if (Object.prototype.hasOwnProperty.call(byProductId, productId)) {
             byProductId[productId].quantity += Math.max(1, Math.round(lineItem.getQuantityValue() || 1));
             return;
         }
