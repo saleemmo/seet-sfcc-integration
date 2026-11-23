@@ -15,7 +15,7 @@ describe('SeetOrdersService', () => {
         const payload = service.buildOrderPayload(createOrder());
         expect(JSON.parse(JSON.stringify(payload))).to.deep.equal({
             event: 'order.placed',
-            order_id: '00012345',
+            order_id: 'RefArch-00012345',
             channel: 'online',
             country: 'SA',
             language: 'ar',
@@ -31,7 +31,9 @@ describe('SeetOrdersService', () => {
                 url: 'https://shop.example.com/Product-Show?pid=MASTER-1',
                 image_url: 'https://cdn.example.com/VARIANT-1-RED.jpg'
             }],
-            metadata: { platform: 'sfcc', site_id: 'RefArch', locale: 'ar_SA' }
+            metadata: {
+                platform: 'sfcc', site_id: 'RefArch', order_no: '00012345', locale: 'ar_SA'
+            }
         });
     });
 
@@ -49,6 +51,13 @@ describe('SeetOrdersService', () => {
         const merged = service.buildOrderPayload(createOrder({ lineItems: [proto, proto] })).items;
         expect(merged).to.have.length(1);
         expect(merged[0]).to.include({ sku: '__proto__', quantity: 4 });
+    });
+
+    it('keeps orders of two sites that share a Seet store apart', () => {
+        const order = createOrder();
+        const first = load({ siteId: 'SiteA' }).service.buildOrderPayload(order);
+        const second = load({ siteId: 'SiteB' }).service.buildOrderPayload(order);
+        expect([first.order_id, second.order_id]).to.deep.equal(['SiteA-00012345', 'SiteB-00012345']);
     });
 
     it('sends a language only when the order locale starts with a language code', () => {

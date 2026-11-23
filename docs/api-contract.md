@@ -76,13 +76,15 @@ query product IDs that contain those characters.
 
 Seet finds the store from the secret key and creates or updates the order by
 `order_id`. Sending the same order again is safe, and each event carries the full
-order. The cartridge also sends `Idempotency-Key: sfcc:{siteId}:{orderNo}`; Seet does
+order. `order_id` is `{siteId}-{orderNo}`: SFCC order numbers are only unique per
+site, so the site ID keeps two sites that share one Seet store from overwriting each
+other's orders. The plain order number is in `metadata.order_no`. The cartridge also sends `Idempotency-Key: sfcc:{siteId}:{orderNo}`; Seet does
 not read it today.
 
 ```json
 {
   "event": "order.delivered",
-  "order_id": "00012345",
+  "order_id": "RefArch-00012345",
   "channel": "online",
   "country": "SA",
   "language": "ar",
@@ -101,12 +103,13 @@ not read it today.
       "image_url": "https://www.example.com/images/25518447M.jpg"
     }
   ],
-  "metadata": { "platform": "sfcc", "site_id": "RefArch", "locale": "ar_SA" }
+  "metadata": { "platform": "sfcc", "site_id": "RefArch", "order_no": "00012345", "locale": "ar_SA" }
 }
 ```
 
 | Field | Source |
 |---|---|
+| `order_id` | Site ID, a hyphen and the SFCC order number. |
 | `event` | SFCC order status through the status mapping (see [configuration.md](configuration.md)). |
 | `fulfilled_at`, `delivered_at`, `cancelled_at`, `refunded_at`, `returned_at` | Time the cartridge first saw that status. Without it Seet would use the time it received the request, which moves on every retry. |
 | `customer.name` | Order customer name, else the billing name, else `Customer` (Seet requires a name). |

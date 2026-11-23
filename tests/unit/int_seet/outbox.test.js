@@ -32,7 +32,7 @@ describe('SeetOutboxHelper', () => {
             expect(custom).to.include({
                 status: 'PENDING', retryCount: 0, storeId: 'store_1', siteId: 'RefArch', idempotencyKey: 'sfcc:RefArch:00012345'
             });
-            expect(JSON.parse(custom.payload)).to.include({ order_id: '00012345', event: 'order.placed' });
+            expect(JSON.parse(custom.payload)).to.include({ order_id: 'RefArch-00012345', event: 'order.placed' });
             expect(ctx.env.calls).to.have.length(0);
         });
 
@@ -216,7 +216,7 @@ describe('SeetOutboxHelper', () => {
 
             ctx.outbox.processDue('PENDING', ctx.options, later);
             expect(ctx.env.calls[1].body).to.include({
-                event: 'order.delivered', order_id: '00012345', delivered_at: later.toISOString()
+                event: 'order.delivered', order_id: 'RefArch-00012345', delivered_at: later.toISOString()
             });
             expect(record(ctx.env).custom).to.include({ status: 'SYNCED', lastSyncedEvent: 'order.delivered', payload: null });
             expect(ctx.outbox.queueOrderUpdates(ctx.options, later)).to.include({ updated: 0 });

@@ -182,6 +182,17 @@ function getCountryCode(order) {
 }
 
 /**
+ * Seet identifies an order by its ID alone within a store. SFCC order numbers are
+ * only unique per site, so the site ID is part of the ID to keep two sites that
+ * share a Seet store from overwriting each other's orders.
+ * @param {dw.order.Order} order - order
+ * @returns {string} Seet order ID, for example "RefArch-00012345"
+ */
+function getSeetOrderId(order) {
+    return SeetConfig.getSiteId() + '-' + order.getOrderNo();
+}
+
+/**
  * Builds the order event payload sent to Seet.
  * @param {dw.order.Order} order - placed order
  * @param {Date} [now] - current time
@@ -195,7 +206,7 @@ function buildOrderPayload(order, now) {
     var total = order.getTotalGrossPrice();
 
     return applyEvent({
-        order_id: order.getOrderNo(),
+        order_id: getSeetOrderId(order),
         channel: 'online',
         country: getCountryCode(order),
         language: languageMatch ? languageMatch[1].toLowerCase() : undefined,
@@ -211,6 +222,7 @@ function buildOrderPayload(order, now) {
         metadata: {
             platform: 'sfcc',
             site_id: SeetConfig.getSiteId(),
+            order_no: order.getOrderNo(),
             locale: locale || undefined
         }
     }, mapEvent(order), now);

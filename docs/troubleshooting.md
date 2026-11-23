@@ -10,6 +10,7 @@ Logs: **Administration > Site Development > Development Setup > Log Files**, fil
 | Old reviews shown | Fragments are page cached for `seetCacheMinutes` and API responses for 10 minutes in the `SeetReviews` cache. Clear the page cache or wait. |
 | `CONFIG` errors in the log | Credential has no password (orders only), the URL is not HTTPS, or `seetServiceCredentialId` names a credential that does not exist. |
 | No `SeetOrderOutbox` records | `seetOrderSyncEnabled` off, metadata not imported, or a custom checkout that does not use `CheckoutServices-PlaceOrder`. Look for `Could not queue order for Seet` or `Seet order hook failed` in the log. |
+| Order not found in Seet by its order number | Seet stores the order as `{siteId}-{orderNo}`, for example `RefArch-00012345`. |
 | Job step ends with `DISABLED` | Order sync is off for the site in the job scope. |
 | Job step ends with `ABORTED` | 401 (`invalid_integration_secret`: the credential password is not the store's `sk_live_…` secret key) or the circuit breaker is open. Fix the credential; records are not consumed. |
 | `HTTP 404` on order export | The credential URL lacks the `/api/v1` prefix. |
